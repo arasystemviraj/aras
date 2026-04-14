@@ -1850,4 +1850,33 @@
                 ]
             },
             options: {
-                responsive: true, maintainAspectRatio:
+                responsive: true, maintainAspectRatio: false,
+                scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' }, title: { display: true, text: 'Latency (ms)' } } },
+                plugins: { tooltip: tooltips, legend: { position: 'top' } }
+            }
+        });
+
+        new Chart(document.getElementById('powerThermalChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['25C', '30C', '35C', '40C', '45C', '50C'],
+                datasets: [
+                    { label: 'Current Draw (mA)', data: [118, 126, 141, 165, 201, 238], borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.08)', yAxisID: 'y', tension: 0.35, fill: true },
+                    { label: 'Board Temp (C)', data: [31, 36, 41, 46, 52, 59], borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.08)', yAxisID: 'y1', tension: 0.35, fill: true }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#1e293b' } },
+                    y: { position: 'left', grid: { color: '#1e293b' }, title: { display: true, text: 'Current (mA)' } },
+                    y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Board Temp (C)' } }
+                },
+                plugins: { tooltip: tooltips, legend: { position: 'top' } }
+            }
+        });
+
+        animateVisibleMetrics();
+    </script>
+</body>
+</html>
