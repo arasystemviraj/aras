@@ -171,6 +171,134 @@
                 transform: none;
             }
         }
+        /* ============================================================
+   TWINKEY ARAS — MOBILE FIX PATCH
+   Drop this in before your closing </style> tag
+   ============================================================ */
+
+/* Prevent chart canvas from blowing out container width */
+.chart-wrapper,
+.chart-wrapper-large { min-width: 0; }
+
+/* Smaller charts on mobile */
+@media (max-width: 767px) {
+  .chart-wrapper       { height: 220px; }
+  .chart-wrapper-large { height: 260px; }
+
+  /* Code blocks: smaller text, touch-friendly scroll */
+  .code-block {
+    padding: 0.9rem;
+    font-size: 0.7rem;
+    border-radius: 0.85rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Body text */
+  .paper-lead { font-size: 0.95rem; line-height: 1.78; }
+
+  /* Cards */
+  .claim-card  { padding: 1.25rem; }
+  .figure-caption { font-size: 0.74rem; padding: 0.85rem 0.95rem 1rem; }
+
+  /* Notes / references: single column */
+  .note-entry,
+  .reference-entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.9rem;
+  }
+  .note-label, .ref-label { padding-top: 0; }
+  .note-text, .reference-text { font-size: 0.86rem; line-height: 1.7; }
+  .backlinks { flex-wrap: wrap; }
+
+  /* ToC links */
+  .toc-link { flex-wrap: wrap; align-items: flex-start; }
+  .toc-link span:last-child { font-size: 0.7rem; }
+
+  /* Disable lift-on-hover for touch devices */
+  .glass-panel:hover { transform: none; }
+
+  /* Scale hero title down */
+  .hero-title { font-size: clamp(2rem, 9vw, 3rem) !important; }
+
+  /* 2-column metric grid on mobile instead of 4 */
+  .grid.grid-cols-1.sm\:grid-cols-2.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Metric card text + padding */
+  .metric-card { padding: 1rem !important; }
+  .metric-value { font-size: 1.5rem !important; }
+
+  /* Reduce section spacing */
+  .page-section { scroll-margin-top: 5rem; }
+
+  /* Glass panel horizontal padding */
+  .glass-panel { padding-left: 1.1rem !important; padding-right: 1.1rem !important; }
+
+  /* Patent claim cards: stack icon + body */
+  .glass-panel.border-l-4 > div { flex-direction: column !important; }
+
+  /* Quick jump pills: smaller */
+  .quick-jump-strip a { font-size: 0.75rem; padding: 0.4rem 0.85rem; }
+
+  /* Footer: stack columns */
+  .grid.grid-cols-1.lg\:grid-cols-\[minmax\(0\,1\.05fr\)\,minmax\(22rem\,0\.95fr\)\] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Back-to-top button */
+  .floating-top { right: 0.65rem; bottom: 0.65rem; padding: 0.65rem 0.85rem; font-size: 0.68rem; }
+}
+
+/* Tables: always allow horizontal scroll to prevent layout blowout */
+.glass-panel table,
+section table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Keep table semantics for accessibility */
+  width: 100%;
+}
+/* Undo display:block on thead/tbody/tr so table renders correctly */
+.glass-panel table thead,
+.glass-panel table tbody,
+.glass-panel table tr,
+section table thead,
+section table tbody,
+section table tr { display: table-row-group; }
+.glass-panel table thead { display: table-header-group; }
+.glass-panel table tr    { display: table-row; }
+.glass-panel table th,
+.glass-panel table td,
+section table th,
+section table td         { display: table-cell; }
+
+/* Wrap the table in a scroll div instead — cleaner approach */
+/* Add class="mob-scroll" to any table wrapper div for scrollable tables */
+.mob-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.mob-scroll table {
+  display: table;
+  min-width: 480px;
+  width: 100%;
+}
+
+/* SVG figures: allow horizontal scroll on small screens */
+@media (max-width: 600px) {
+  .figure-frame { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .figure-frame svg { min-width: 440px; display: block; }
+}
+
+/* Phones ≤ 390px */
+@media (max-width: 390px) {
+  .chart-wrapper       { height: 180px; }
+  .chart-wrapper-large { height: 210px; }
+  .hero-title { font-size: 1.85rem !important; }
+  .paper-lead { font-size: 0.88rem; }
+}
     </style>
 </head>
 <body class="antialiased selection:bg-cyan-500 selection:text-white flex flex-col min-h-screen">
