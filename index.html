@@ -1,1 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TwinKey ARAS — Advanced Rider Assistive System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg:      #0d0f1a;
+      --surface: #13172a;
+      --border:  #1e2440;
+      --cyan:    #38bdf8;
+      --pink:    #f472b6;
+      --purple:  #a78bfa;
+      --gold:    #facc15;
+      --red:     #ef4444;
+      --green:   #22d3ee;
+      --text:    #e2e8f0;
+      --muted:   #64748b;
+      --mono:    'JetBrains Mono', monospace;
+      --sans:    'Inter', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── HERO SECTION ── */
+    .hero {
+      width: 100%;
+      max-width: 1080px;
+      padding: 64px 32px 56px;
+      text-align: center;
+      position: relative;
+    }
+
+    /* Subtle radial glow behind headline */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 400px;
+      background: radial-gradient(ellipse at 50% 20%,
+        rgba(56,189,248,0.10) 0%,
+        rgba(167,139,250,0.07) 40%,
+        transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Patent badge */
+    .patent-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      color: #94a3b8;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      padding: 6px 18px;
+      margin-bottom: 48px;
+      text-transform: uppercase;
+    }
+    .badge-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 0 rgba(239,68,68,0.6);
+      animation: pulse 1.8s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0   rgba(239,68,68,0.7); }
+      70%  { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+      100% { box-shadow: 0 0 0 0   rgba(239,68,68,0); }
+    }
+
+    /* Hero headline */
+    .hero-headline {
+      font-size: clamp(3rem, 9vw, 6.5rem);
+      font-weight: 900;
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+      margin-bottom: 28px;
+    }
+    .line-white { color: #ffffff; display: block; }
+    .line-gradient {
+      display: block;
+      background: linear-gradient(90deg, var(--cyan) 0%, var(--purple) 50%, var(--pink) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Body copy */
+    .hero-body {
+      max-width: 680px;
+      margin: 0 auto 52px;
+      font-size: clamp(0.95rem, 2vw, 1.1rem);
+      line-height: 1.75;
+      color: #94a3b8;
+      text-align: center;
+    }
+    .hero-body strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── STAT CHIPS ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 900px;
+      padding: 0 32px;
+      margin-bottom: 64px;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 18px;
+    }
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .stat:nth-child(1) .stat-value { color: var(--cyan); }
+    .stat:nth-child(2) .stat-value { color: var(--text); }
+    .stat:nth-child(3) .stat-value { color: var(--red); }
+    .stat:nth-child(4) .stat-value { color: var(--gold); }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    /* ── NAV GRID ── */
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+      padding: 0 32px;
+    }
+
+    .nav-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 26px 22px;
+      text-decoration: none;
+      color: inherit;
+      overflow: hidden;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    /* Glow shard */
+    .nav-card::after {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: var(--gc, var(--cyan));
+      opacity: 0.06;
+      filter: blur(32px);
+      transition: opacity 0.25s;
+    }
+    .nav-card:hover { transform: translateY(-4px); border-color: var(--gc, var(--cyan)); box-shadow: 0 0 0 1px var(--gc, var(--cyan)), 0 16px 40px -10px rgba(0,0,0,0.5); }
+    .nav-card:hover::after { opacity: 0.14; }
+
+    .nav-card:nth-child(1) { --gc: var(--cyan); }
+    .nav-card:nth-child(2) { --gc: var(--gold); }
+    .nav-card:nth-child(3) { --gc: var(--purple); }
+    .nav-card:nth-child(4) { --gc: #4ade80; }
+
+    /* Top accent line */
+    .nav-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gc, var(--cyan));
+      border-radius: 16px 16px 0 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .nav-card:hover::before { opacity: 1; }
+
+    .nc-num {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--gc, var(--cyan));
+      letter-spacing: 0.14em;
+      opacity: 0.6;
+    }
+    .nc-icon { font-size: 1.75rem; line-height: 1; }
+    .nc-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.25;
+    }
+    .nc-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.55;
+      flex: 1;
+    }
+    .nc-arrow {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--gc, var(--cyan));
+      align-self: flex-end;
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: opacity 0.18s, transform 0.18s;
+    }
+    .nav-card:hover .nc-arrow { opacity: 1; transform: translateX(0); }
+
+    /* ── FOOTER STRIP ── */
+    .footer-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      width: 100%;
+      max-width: 900px;
+      padding: 32px 32px 0;
+      margin-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+    .f-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 600;
+      transition: filter 0.18s, transform 0.18s;
+    }
+    .f-btn:hover { filter: brightness(1.2); transform: translateY(-2px); }
+    .f-contact {
+      background: rgba(239,68,68,0.10);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: #f87171;
+    }
+    .f-about {
+      background: rgba(167,139,250,0.10);
+      border: 1px solid rgba(167,139,250,0.35);
+      color: var(--purple);
+    }
+
+    footer {
+      margin-top: 28px;
+      padding: 18px 24px 44px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .stats       { grid-template-columns: repeat(2, 1fr); }
+      .nav-grid    { grid-template-columns: 1fr; }
+      .footer-strip { flex-direction: column; }
+      .hero        { padding: 48px 20px 36px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <div class="patent-badge">
+      <span class="badge-dot"></span>
+      Patent Application Pending: 202521120497
+    </div>
+
+    <h1 class="hero-headline">
+      <span class="line-white">Eradicating</span>
+      <span class="line-gradient">Thread Starvation.</span>
+    </h1>
+
+    <p class="hero-body">
+      The TwinKey Advanced Rider Assistive System (ARAS) represents a fundamental
+      mathematical paradigm shift in two-wheeler edge-computing. By aggressively
+      decoupling physical hardware actuation from UI rendering and telemetry logging
+      via a proprietary <strong>Dual-MCU hardware interlock</strong>, the system achieves
+      unprecedented sub-100ms collision avoidance responses, solving the blocking-delay
+      crisis inherent in single-board safety computers.
+    </p>
+  </section>
+
+  <!-- ── STATS ── -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Critical Latency</div>
+      <div class="stat-value">&lt;&nbsp;85ms</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Data Resolution</div>
+      <div class="stat-value">2Hz</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Vectors / Cycle</div>
+      <div class="stat-value">27</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Base BOM</div>
+      <div class="stat-value">₹4,170</div>
+    </div>
+  </div>
+
+  <!-- ── NAV CARDS ── -->
+  <p class="section-label">Explore the System</p>
+
+  <div class="nav-grid">
+
+    <a class="nav-card" href="information.html">
+      <span class="nc-num">01 / OVERVIEW</span>
+      <div class="nc-icon">📋</div>
+      <div class="nc-title">Information About the System</div>
+      <div class="nc-desc">Architecture, patent details, sensor fusion overview, and full technical specifications of the TwinKey ARAS platform.</div>
+      <span class="nc-arrow">→ Open</span>
+    </a>
+
+    <a class="nav-card" href="working.html">
+      <span class="nc-num">02 / TECHNOLOGY</span>
+      <div class="nc-icon">⚙️</div>
+      <div class="nc-title">Working of the System</div>
+      <div class="nc-desc">Deep dive into the three core algorithms — automatic headlight dimmer, directional haptic helmet engine, and pothole detection.</div>
+      <span class="nc-arrow">→ Open</span>
+    </a>
+
+    <a class="nav-card" href="simulator.html">
+      <span class="nc-num">03 / INTERACTIVE</span>
+      <div class="nc-icon">🖥️</div>
+      <div class="nc-title">Simulator of the System</div>
+      <div class="nc-desc">Live interactive demo of MCU1 Safety Engine and MCU2 Network layer — test sensor inputs and watch real-time system responses.</div>
+      <span class="nc-arrow">→ Open</span>
+    </a>
+
+    <a class="nav-card" href="partnership.html">
+      <span class="nc-num">04 / COLLABORATE</span>
+      <div class="nc-icon">🤝</div>
+      <div class="nc-title">Partnership for Development</div>
+      <div class="nc-desc">Commercialization roadmap, IP licensing opportunities, and how to connect for joint development or investment.</div>
+      <span class="nc-arrow">→ Open</span>
+    </a>
+
+  </div>
+
+  <!-- ── FOOTER STRIP ── -->
+  <div class="footer-strip">
+    <a class="f-btn f-contact" href="contact.html">
+      📬&nbsp; Contact Info &nbsp;·&nbsp; dandwateviraj@gmail.com &nbsp;·&nbsp; 8275201680
+    </a>
+    <a class="f-btn f-about" href="about.html">
+      👤&nbsp; About Me
+    </a>
+  </div>
+
+  <footer>
+    TWINKEY ARAS &nbsp;·&nbsp; VIRAJ DANDWATE
+  </footer>
+
+</body>
+</html>
