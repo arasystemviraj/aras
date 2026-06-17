@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TwinKey ARAS — Advanced Rider Assistive System</title>
+<style>
+:root{
+  --bg:#030b17;--bg2:#050f1e;--surf:rgba(255,255,255,.05);
+  --surf2:rgba(255,255,255,.09);--border:rgba(80,160,255,.18);
+  --accent:#00c8ff;--accent2:#00ffaa;--danger:#ff4455;
+  --warn:#ffaa00;--ok:#00ee88;--text:#ddf0ff;--text2:#88aabb;
+  --text3:#445566;--r:16px;--r-sm:10px;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+  background-image:radial-gradient(ellipse at 20% 10%,rgba(0,150,255,.12) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 90%,rgba(0,255,150,.08) 0%,transparent 50%)}
+
+/* ── NAV ─────────────────────── */
+nav{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;border-bottom:1px solid var(--border);
+  background:rgba(3,11,23,.85);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:100}
+.nav-logo{font-size:1.05rem;font-weight:800;letter-spacing:.04em;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-tag{font-size:.75rem;color:var(--text2);letter-spacing:.06em;
+  border:1px solid var(--border);border-radius:20px;padding:3px 10px}
+
+/* ── HERO ────────────────────── */
+.hero{text-align:center;padding:60px 24px 50px;max-width:780px;margin:0 auto}
+.hero-badge{display:inline-block;font-size:.8rem;letter-spacing:.12em;color:var(--accent);
+  border:1px solid rgba(0,200,255,.3);border-radius:20px;padding:5px 14px;margin-bottom:20px}
+.hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;
+  background:linear-gradient(135deg,#fff 30%,var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
+.hero p{font-size:1.05rem;color:var(--text2);line-height:1.7;margin-bottom:30px}
+.hero-stats{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
+.stat-pill{background:var(--surf2);border:1px solid var(--border);border-radius:12px;
+  padding:12px 22px;text-align:center}
+.stat-num{font-size:1.6rem;font-weight:700;color:var(--accent);display:block}
+.stat-lbl{font-size:.75rem;color:var(--text2);letter-spacing:.05em}
+
+/* ── FEATURE CARDS ───────────── */
+.features{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:16px;max-width:1200px;margin:0 auto 50px;padding:0 24px}
+.feat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);
+  padding:22px;transition:transform .2s,border-color .2s,box-shadow .2s}
+.feat-card:hover{transform:translateY(-3px);border-color:rgba(0,200,255,.35);
+  box-shadow:0 12px 40px rgba(0,200,255,.08)}
+.feat-icon{font-size:1.8rem;margin-bottom:12px;display:block}
+.feat-title{font-size:.95rem;font-weight:700;margin-bottom:6px;color:var(--text)}
+.feat-desc{font-size:.83rem;color:var(--text2);line-height:1.6}
+
+/* ── SIMULATOR WRAPPER ───────── */
+.sim-section{max-width:1280px;margin:0 auto;padding:0 20px 60px}
+.sim-section-head{text-align:center;margin-bottom:28px}
+.sim-section-head h2{font-size:1.6rem;font-weight:800;margin-bottom:8px}
+.sim-section-head p{font-size:.9rem;color:var(--text2)}
+.scenarios{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
+.scen-btn{background:var(--surf2);border:1px solid var(--border);border-radius:24px;
+  color:var(--text);padding:10px 20px;font-size:.85rem;font-weight:600;cursor:pointer;
+  transition:all .2s;white-space:nowrap}
+.scen-btn:hover{background:rgba(0,200,255,.12);border-color:rgba(0,200,255,.4);
+  transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,200,255,.1)}
+.scen-btn.danger:hover{background:rgba(255,68,85,.12);border-color:rgba(255,68,85,.4)}
+
+/* ── SIM GRID ────────────────── */
+.sim-grid{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr) minmax(0,270px);
+  gap:16px;align-items:start}
+@media(max-width:1024px){.sim-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.sim-grid{grid-template-columns:1fr}}
+
+/* ── PANELS ──────────────────── */
+.panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);
+  padding:18px;box-shadow:var(--shadow)}
+.panel+.panel{margin-top:14px}
+.panel-title{font-size:.72rem;font-weight:700;letter-spacing:.1em;color:var(--text3);
+  text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.panel-title::before{content:'';display:block;width:3px;height:12px;
+  border-radius:2px;background:var(--accent)}
+
+/* ── SLIDERS ─────────────────── */
+.srow{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.srow.highlight .slbl{color:var(--warn);font-weight:600}
+.slbl{font-size:.82rem;color:var(--text2);min-width:68px;flex-shrink:0}
+.sval{font-size:.82rem;font-weight:700;min-width:38px;text-align:right;color:var(--text)}
+.sval.alert{color:var(--danger)}
+input[type=range]{flex:1;height:5px;border-radius:4px;accent-color:var(--accent);cursor:pointer;min-width:0}
+
+/* ── LCD ─────────────────────── */
+.lcd-wrap{background:#020d04;border:1px solid rgba(0,255,80,.14);border-radius:12px;
+  padding:14px 16px;margin-bottom:14px;position:relative;overflow:hidden}
+.lcd-wrap::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,rgba(0,255,0,.015) 0px,rgba(0,255,0,.015) 1px,transparent 1px,transparent 4px);
+  pointer-events:none}
+.lcd{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11.5px;
+  line-height:1.72;color:#7dff9a;letter-spacing:.6px;white-space:pre;position:relative;z-index:1}
+
+/* ── CANVAS AREAS ────────────── */
+.canvas-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--border);
+  background:rgba(0,0,0,.3);margin-bottom:14px}
+canvas{display:block;width:100%;image-rendering:auto}
+.oled-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.oled-wrap{border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
+  background:#000;position:relative}
+.oled-label{font-size:.7rem;color:var(--text3);text-align:center;padding:4px 0 2px;
+  background:rgba(0,0,0,.5)}
+.oled-wrap canvas{display:block;width:100%}
+.flash-info{font-size:.68rem;color:var(--text3);text-align:center;padding:2px 4px;
+  background:rgba(0,0,0,.4)}
+
+/* ── RISK GAUGE ──────────────── */
+.risk-wrap{text-align:center;padding:10px 0 16px;position:relative}
+.risk-svg{display:block;margin:0 auto 6px}
+.risk-label{font-size:.72rem;color:var(--text3);letter-spacing:.08em}
+
+/* ── ALGO CARDS ──────────────── */
+.algo-card{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:12px 14px;margin-bottom:10px;transition:border-color .3s}
+.algo-card.active{border-color:rgba(255,170,0,.4);background:rgba(255,170,0,.05)}
+.algo-card.alert{border-color:rgba(255,68,85,.5);background:rgba(255,68,85,.07)}
+.algo-name{font-size:.7rem;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:4px}
+.algo-status{font-size:.88rem;font-weight:600;line-height:1.3}
+
+/* ── RELAY GRID ──────────────── */
+.relay-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
+.relay-item{text-align:center}
+.relay-dot{width:18px;height:18px;border-radius:50%;margin:0 auto 4px;
+  transition:background .2s,box-shadow .2s;background:#223}
+.relay-dot.on{background:var(--ok);box-shadow:0 0 0 5px rgba(0,238,136,.2)}
+.relay-dot.warn{background:var(--warn);box-shadow:0 0 0 5px rgba(255,170,0,.2)}
+.relay-dot.danger{background:var(--danger);box-shadow:0 0 0 5px rgba(255,68,85,.2)}
+.relay-name{font-size:.62rem;color:var(--text3);line-height:1.3}
+
+/* ── BLIND SPOT PANEL ────────── */
+.bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:10px;overflow:hidden}
+.bs-cell{background:var(--bg2);padding:12px;transition:background .3s}
+.bs-cell.alert{background:rgba(255,68,85,.08)}
+.bs-side{font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--text3);margin-bottom:5px}
+.bs-dist{font-size:1.5rem;font-weight:800;margin-bottom:3px;transition:color .3s}
+.bs-info{font-size:.72rem;color:var(--text2);line-height:1.5}
+.bs-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);
+  margin-top:6px;overflow:hidden}
+.bs-fill{height:100%;border-radius:2px;transition:width .3s,background .3s}
+
+/* ── JSON ────────────────────── */
+.json-box{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:10px 12px;font-family:ui-monospace,monospace;
+  font-size:9.5px;color:var(--text2);max-height:160px;overflow-y:auto;white-space:pre;line-height:1.55}
+.json-box::-webkit-scrollbar{width:4px}
+.json-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── FOOTER ──────────────────── */
+footer{text-align:center;padding:30px;font-size:.8rem;color:var(--text3);
+  border-top:1px solid var(--border)}
+footer strong{color:var(--text2)}
+
+/* ── UTILS ───────────────────── */
+.divider{height:1px;background:var(--border);margin:14px 0}
+.tag{display:inline-block;font-size:.7rem;border-radius:6px;
+  padding:2px 8px;font-weight:600;letter-spacing:.04em}
+.tag.ok{background:rgba(0,238,136,.12);color:var(--ok)}
+.tag.warn{background:rgba(255,170,0,.12);color:var(--warn)}
+.tag.danger{background:rgba(255,68,85,.12);color:var(--danger)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">TwinKey ARAS</div>
+  <div class="nav-tag">Patent · 202521120497</div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">Advanced Rider Assistive System</div>
+  <h1>360° Intelligent<br>Motorcycle Safety</h1>
+  <p>Real-time sensor fusion, directional haptic alerts, automatic headlight dimming and pothole detection — all processed on dual ESP8266 microcontrollers at the edge.</p>
+  <div class="hero-stats">
+    <div class="stat-pill"><span class="stat-num">18</span><span class="stat-lbl">Sensors</span></div>
+    <div class="stat-pill"><span class="stat-num">17</span><span class="stat-lbl">Outputs</span></div>
+    <div class="stat-pill"><span class="stat-num">3</span><span class="stat-lbl">Algorithms</span></div>
+    <div class="stat-pill"><span class="stat-num">2</span><span class="stat-lbl">MCUs</span></div>
+    <div class="stat-pill"><span class="stat-num">2Hz</span><span class="stat-lbl">Telemetry</span></div>
+  </div>
+</div>
+
+<div class="features">
+  <div class="feat-card"><span class="feat-icon">🚨</span><div class="feat-title">Blind Spot Detection</div><div class="feat-desc">Left &amp; right mirror HC-SR04 sensors with OLED HUDs that flash faster as vehicles approach — 12.5 Hz strobe at 10 cm.</div></div>
+  <div class="feat-card"><span class="feat-icon">💡</span><div class="feat-title">Auto Headlight Dimmer</div><div class="feat-desc">Algorithm A switches to low beam when oncoming traffic is within 300 cm, restores at 320 cm to prevent flicker.</div></div>
+  <div class="feat-card"><span class="feat-icon">🎯</span><div class="feat-title">Haptic Helmet Ring</div><div class="feat-desc">10 vibration motors in a 360° spatial layout give the rider directional awareness of obstacles without looking away.</div></div>
+  <div class="feat-card"><span class="feat-icon">🕳️</span><div class="feat-title">Pothole Detection</div><div class="feat-desc">Algorithm C fuses ultrasonic + IR + IMU: detects road surface drops only when lean angle is stable, ruling out cornering.</div></div>
+  <div class="feat-card"><span class="feat-icon">📡</span><div class="feat-title">Live WiFi Dashboard</div><div class="feat-desc">ESP2 hosts an async web server at 192.168.4.1. The companion Android app streams GPS &amp; nav waypoints back in real time.</div></div>
+  <div class="feat-card"><span class="feat-icon">⚡</span><div class="feat-title">Dual-MCU Architecture</div><div class="feat-desc">Safety loops pinned to MCU1, network &amp; haptics on MCU2. Zero-latency 115200 bps UART link with STX/ETX framing.</div></div>
+</div>
+
+<!-- ═══════════════════ SIMULATOR ═══════════════════ -->
+<div class="sim-section">
+  <div class="sim-section-head">
+    <h2>Interactive Simulator</h2>
+    <p>Drag sliders or click a scenario — all three algorithms run live in your browser</p>
+  </div>
+
+  <div class="scenarios">
+    <button class="scen-btn" onclick="scenario('leftBS')">⚠ Left Blind Spot</button>
+    <button class="scen-btn" onclick="scenario('rightBS')">⚠ Right Blind Spot</button>
+    <button class="scen-btn danger" onclick="scenario('oncoming')">🚗 Oncoming Vehicle</button>
+    <button class="scen-btn danger" onclick="scenario('tailgate')">🚘 Tailgater</button>
+    <button class="scen-btn danger" onclick="scenario('pothole')">🕳 Pothole</button>
+    <button class="scen-btn danger" onclick="scenario('critical')">🔴 Critical All</button>
+    <button class="scen-btn" onclick="scenario('clear')">✓ All Clear</button>
+  </div>
+
+  <div class="sim-grid">
+
+    <!-- LEFT: SENSOR CONTROLS -->
+    <div>
+      <div class="panel">
+        <div class="panel-title">Primary sensors</div>
+        <div class="srow"><span class="slbl">Front</span><input type="range" min="0" max="400" value="250" id="s_front" oninput="set('front',this.value)"><span class="sval" id="v_front">250 cm</span></div>
+        <div class="srow"><span class="slbl">Rear</span><input type="range" min="0" max="400" value="180" id="s_rear" oninput="set('rear',this.value)"><span class="sval" id="v_rear">180 cm</span></div>
+        <div class="srow"><span class="slbl">Left side</span><input type="range" min="0" max="200" value="120" id="s_left" oninput="set('left',this.value)"><span class="sval" id="v_left">120 cm</span></div>
+        <div class="srow"><span class="slbl">Right side</span><input type="range" min="0" max="200" value="90" id="s_right" oninput="set('right',this.value)"><span class="sval" id="v_right">90 cm</span></div>
+
+        <div class="divider"></div>
+        <div class="panel-title" style="color:var(--warn)">Blind spot sensors</div>
+        <div class="srow highlight"><span class="slbl">L. Mirror</span><input type="range" min="0" max="400" value="300" id="s_lm" oninput="set('lm',this.value)"><span class="sval" id="v_lm">300 cm</span></div>
+        <div class="srow highlight"><span class="slbl">R. Mirror</span><input type="range" min="0" max="400" value="60" id="s_rm" oninput="set('rm',this.value)"><span class="sval" id="v_rm">60 cm</span></div>
+
+        <div class="divider"></div>
+        <div class="panel-title">Pothole sensors</div>
+        <div class="srow"><span class="slbl">Pothole US</span><input type="range" min="0" max="60" value="20" id="s_pot" oninput="set('pot',this.value)"><span class="sval" id="v_pot">20 cm</span></div>
+        <div class="srow"><span class="slbl">Pothole IR</span><input type="range" min="3000" max="9000" value="4800" id="s_ir" oninput="set('ir',this.value)"><span class="sval" id="v_ir">4800</span></div>
+
+        <div class="divider"></div>
+        <div class="panel-title">Bike state</div>
+        <div class="srow"><span class="slbl">Lean angle</span><input type="range" min="-45" max="45" value="0" id="s_lean" oninput="set('lean',this.value)"><span class="sval" id="v_lean">0°</span></div>
+        <div class="srow"><span class="slbl">Speed</span><input type="range" min="0" max="130" value="45" id="s_spd" oninput="set('spd',this.value)"><span class="sval" id="v_spd">45 km/h</span></div>
+        <div class="srow"><span class="slbl">Bike LDR</span><input type="range" min="0" max="26000" value="15000" id="s_ldr" oninput="set('ldr',this.value)"><span class="sval" id="v_ldr">15000</span></div>
+      </div>
+    </div>
+
+    <!-- CENTER: VISUALIZATION -->
+    <div>
+      <!-- Bike top view canvas -->
+      <div class="canvas-wrap">
+        <canvas id="cvBike" height="260"></canvas>
+      </div>
+
+      <!-- Haptic helmet ring -->
+      <div class="canvas-wrap">
+        <canvas id="cvHelmet" height="180"></canvas>
+      </div>
+
+      <!-- OLED displays -->
+      <div class="oled-row">
+        <div>
+          <div class="oled-label">Left OLED — blind spot HUD</div>
+          <div class="oled-wrap"><canvas id="cvOledL" width="128" height="64"></canvas></div>
+          <div class="flash-info" id="flashInfoL">Idle · nav mode</div>
+        </div>
+        <div>
+          <div class="oled-label">Right OLED — blind spot HUD</div>
+          <div class="oled-wrap"><canvas id="cvOledR" width="128" height="64"></canvas></div>
+          <div class="flash-info" id="flashInfoR">Idle · nav mode</div>
+        </div>
+      </div>
+
+      <!-- LCD display -->
+      <div class="lcd-wrap">
+        <div class="lcd" id="lcd">SPD:---km  LN:  0.0°
+F:250 R:180 L:120 S: 90
+DAY  OK   BM:HI  P: 20
+LINK:OK  PKT:00000000  </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: STATUS -->
+    <div>
+      <!-- Risk gauge -->
+      <div class="panel">
+        <div class="panel-title">Risk score</div>
+        <div class="risk-wrap">
+          <svg class="risk-svg" id="riskSvg" width="140" height="80" viewBox="0 0 140 80">
+            <path d="M15 75 A55 55 0 0 1 125 75" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="10" stroke-linecap="round"/>
+            <path d="M15 75 A55 55 0 0 1 125 75" fill="none" stroke="url(#rg)" stroke-width="10" stroke-linecap="round" id="riskArc" stroke-dasharray="0 173"/>
+            <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#00ee88"/><stop offset="50%" stop-color="#ffaa00"/><stop offset="100%" stop-color="#ff4455"/></linearGradient></defs>
+            <text x="70" y="68" text-anchor="middle" fill="#ddf0ff" font-size="22" font-weight="800" font-family="monospace" id="riskNum">0</text>
+          </svg>
+          <div class="risk-label" id="riskLbl">All clear</div>
+        </div>
+        <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden">
+          <div id="riskBar" style="height:100%;width:0%;background:var(--ok);border-radius:3px;transition:width .4s,background .4s"></div>
+        </div>
+        <div style="font-size:.75rem;color:var(--text3);margin-top:8px;line-height:1.6" id="riskFactors">—</div>
+      </div>
+
+      <!-- Algorithm states -->
+      <div class="panel">
+        <div class="panel-title">Algorithm states</div>
+        <div class="algo-card" id="cardA">
+          <div class="algo-name">A · Headlight auto-dimmer</div>
+          <div class="algo-status" id="algoA" style="color:var(--ok)">High beam active</div>
+        </div>
+        <div class="algo-card" id="cardB">
+          <div class="algo-name">B · Haptic helmet engine</div>
+          <div class="algo-status" id="algoB" style="color:var(--text3)">All 10 motors idle</div>
+        </div>
+        <div class="algo-card" id="cardC">
+          <div class="algo-name">C · Pothole fusion</div>
+          <div class="algo-status" id="algoC" style="color:var(--text3)">Monitoring · road clear</div>
+        </div>
+      </div>
+
+      <!-- Relays -->
+      <div class="panel">
+        <div class="panel-title">Relay outputs — MCU1</div>
+        <div class="relay-grid">
+          <div class="relay-item"><div class="relay-dot" id="r0"></div><div class="relay-name">Brake</div></div>
+          <div class="relay-item"><div class="relay-dot" id="r1"></div><div class="relay-name">L. Ind</div></div>
+          <div class="relay-item"><div class="relay-dot" id="r2"></div><div class="relay-name">R. Ind</div></div>
+          <div class="relay-item"><div class="relay-dot on" id="r3"></div><div class="relay-name">Beam</div></div>
+          <div class="relay-item"><div class="relay-dot on" id="r4"></div><div class="relay-name">Main</div></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--text3)">L.Ind &amp; R.Ind fire on blind spot detection</div>
+      </div>
+
+      <!-- Blind spot status -->
+      <div class="panel">
+        <div class="panel-title">Blind spot status</div>
+        <div class="bs-grid">
+          <div class="bs-cell" id="bsL">
+            <div class="bs-side">LEFT MIRROR</div>
+            <div class="bs-dist" id="bsLdist" style="color:var(--ok)">300 cm</div>
+            <div class="bs-info" id="bsLinfo">OLED: idle<br>Motor 8: 0%<br>Relay: off</div>
+            <div class="bs-bar"><div class="bs-fill" id="bsLbar" style="width:0%;background:var(--ok)"></div></div>
+          </div>
+          <div class="bs-cell" id="bsR">
+            <div class="bs-side">RIGHT MIRROR</div>
+            <div class="bs-dist" id="bsRdist" style="color:var(--ok)">60 cm</div>
+            <div class="bs-info" id="bsRinfo">OLED: idle<br>Motor 9: 0%<br>Relay: off</div>
+            <div class="bs-bar"><div class="bs-fill" id="bsRbar" style="width:0%;background:var(--ok)"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON telemetry -->
+      <div class="panel">
+        <div class="panel-title">Live telemetry packet · 2 Hz</div>
+        <div class="json-box" id="jsonBox">{}</div>
+      </div>
+    </div>
+
+  </div><!-- /sim-grid -->
+</div><!-- /sim-section -->
+
+<footer>
+  <strong>TwinKey ARAS</strong> &nbsp;·&nbsp; Indian Provisional Patent No. <strong>202521120497</strong><br>
+  <span style="margin-top:6px;display:block">Dual ESP8266 · 18 sensors · 17 outputs · 3 algorithms · WiFi telemetry</span>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  SENSOR STATE
+// ═══════════════════════════════════════════════════
+const S={front:250,rear:180,left:120,right:90,lm:300,rm:60,pot:20,ir:4800,lean:0,spd:45,ldr:15000};
+const AS={highBeam:true,prevIR:4800,prevUS:20,pot:false,potAt:0,pkt:0};
+
+// Independent OLED state per side (bug-fixed)
+const OLED={L:{phase:false,last:0,active:false},R:{phase:false,last:0,active:false}};
+let idleDrawL=0,idleDrawR=0;
+
+// ── Sensor setters ──────────────────────────────────
+const UNITS={front:' cm',rear:' cm',left:' cm',right:' cm',lm:' cm',rm:' cm',pot:' cm',ir:'',lean:'°',spd:' km/h',ldr:''};
+function set(k,v){
+  S[k]=parseFloat(v);
+  const el=document.getElementById('v_'+k);
+  if(el)el.textContent=parseFloat(v).toFixed(0)+(UNITS[k]||'');
+  const va=document.getElementById('v_'+k);
+  if(va){va.classList.toggle('alert',needsAlert(k,parseFloat(v)));}
+}
+function setSl(k,v){
+  S[k]=parseFloat(v);
+  const s=document.getElementById('s_'+k),e=document.getElementById('v_'+k);
+  if(s)s.value=v;
+  if(e)e.textContent=parseFloat(v).toFixed(0)+(UNITS[k]||'');
+}
+function needsAlert(k,v){
+  if(k==='front')return v>0&&v<80;
+  if(k==='rear')return v>0&&v<40;
+  if(k==='left'||k==='right')return v>0&&v<50;
+  if(k==='lm'||k==='rm')return v>0&&v<100;
+  return false;
+}
+
+// ── Scenarios ───────────────────────────────────────
+function scenario(s){
+  const c={front:250,rear:180,left:120,right:90,lm:300,rm:300,pot:20,ir:4800,lean:0,spd:45,ldr:15000};
+  if(s==='leftBS')  Object.assign(c,{lm:42,left:55});
+  if(s==='rightBS') Object.assign(c,{rm:38,right:48});
+  if(s==='oncoming')Object.assign(c,{front:65});
+  if(s==='tailgate')Object.assign(c,{rear:22});
+  if(s==='pothole') {
+    Object.assign(c,{pot:38,ir:7200,lean:2});
+    setTimeout(()=>{setSl('pot',20);setSl('ir',4800);},900);
+  }
+  if(s==='critical')Object.assign(c,{front:28,rear:18,lm:40,rm:35,left:30,right:28,spd:90});
+  if(s==='clear'){}
+  Object.keys(c).forEach(k=>setSl(k,c[k]));
+}
+
+// ═══════════════════════════════════════════════════
+//  ALGORITHMS (all bug-fixed)
+// ═══════════════════════════════════════════════════
+function algoA(){
+  const f=S.front;
+  if(AS.highBeam){if(f>0.5&&f<300)AS.highBeam=false;}
+  else{if(f<0.5||f>=320)AS.highBeam=true;}
+}
+
+// Standard motor PWM: onset 50cm
+function pwm(d){
+  if(!d||d<0.5||d>=50)return 0;
+  const r=1-Math.min(1,Math.max(0,(d-10)/40));return r*r;
+}
+// Blind spot motor PWM: 100cm onset, two-zone ramp
+function pwmBS(d){
+  if(!d||d<0.5||d>=100)return 0;
+  if(d>=50){const r=1-(d-50)/50;return r*0.25;}
+  const r=1-Math.min(1,Math.max(0,(d-10)/40));
+  return 0.25+(r*r)*0.75;
+}
+function algoB(){
+  return[pwm(S.front),Math.max(pwm(S.front),pwm(S.left)),pwm(S.left),
+         Math.max(pwm(S.rear),pwmBS(S.lm)),pwm(S.rear),Math.max(pwm(S.rear),pwmBS(S.rm)),
+         pwm(S.right),Math.max(pwm(S.front),pwm(S.right)),pwmBS(S.lm),pwmBS(S.rm)];
+}
+function algoC(){
+  const now=Date.now();
+  const ud=S.pot-AS.prevUS,id=S.ir-AS.prevIR,ok=Math.abs(S.lean)<15;
+  if(ud>8&&id>800&&ok){AS.pot=true;AS.potAt=now;}
+  else if(AS.pot&&now-AS.potAt>500)AS.pot=false;
+  AS.prevIR=S.ir;AS.prevUS=S.pot;
+}
+
+// Blind spot relay: fires when mirror dist < 100cm and > 0
+function bsActive(d){return d>0.5&&d<100;}
+
+function computeRisk(){
+  let s=0;
+  if(S.front>0&&S.front<300)s+=40*(1-S.front/300);
+  if(S.rear>0&&S.rear<200) s+=15*(1-S.rear/200);
+  if(S.left>0&&S.left<80)  s+=7.5*(1-S.left/80);
+  if(S.right>0&&S.right<80)s+=7.5*(1-S.right/80);
+  if(S.lm>0&&S.lm<100)     s+=8*(1-S.lm/100);
+  if(S.rm>0&&S.rm<100)     s+=8*(1-S.rm/100);
+  if(AS.pot)s+=12;
+  const l=Math.abs(S.lean);if(l>30)s+=Math.min(8,(l-30)*.4);
+  if(S.spd>60)s+=Math.min(5,(S.spd-60)*.1);
+  return Math.min(100,Math.max(0,Math.round(s)));
+}
+
+// ═══════════════════════════════════════════════════
+//  BIKE TOP VIEW CANVAS
+// ═══════════════════════════════════════════════════
+function distColor(d,alpha){
+  let r,g,b;
+  if(d<30){r=255;g=40;b=40;}
+  else if(d<60){r=255;g=130;b=0;}
+  else if(d<120){r=255;g=210;b=0;}
+  else{r=0;g=200;b=255;}
+  return`rgba(${r},${g},${b},${alpha})`;
+}
+function drawArc(ctx,x,y,dist,dir,halfSpan,scale,maxPx){
+  if(dist<=0||dist>420)return;
+  const R=Math.min(dist*scale,maxPx);
+  const a1=dir-halfSpan,a2=dir+halfSpan;
+  const grd=ctx.createRadialGradient(x,y,0,x,y,R);
+  grd.addColorStop(0,distColor(dist,dist<60?.55:.35));
+  grd.addColorStop(1,distColor(dist,0));
+  ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,R,a1,a2);ctx.closePath();
+  ctx.fillStyle=grd;ctx.fill();
+  // distance label
+  const midA=dir,lx=x+Math.cos(midA)*R*.62,ly=y+Math.sin(midA)*R*.62;
+  ctx.fillStyle=distColor(dist,0.9);ctx.font='bold 9px monospace';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(dist.toFixed(0)+'cm',lx,ly);
+}
+
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+function drawBike(){
+  const cv=document.getElementById('cvBike');
+  const W=cv.offsetWidth||600,H=260;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  const cx=W/2,cy=H/2,SC=0.48;
+
+  // Road bg
+  ctx.fillStyle='#0d1520';ctx.fillRect(0,0,W,H);
+  // Lane markings
+  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.setLineDash([20,16]);ctx.lineWidth=1.5;
+  for(let x=50;x<W;x+=100){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  ctx.setLineDash([]);
+
+  // Sensor arcs (behind bike)
+  const P=Math.PI;
+  drawArc(ctx,cx,cy-24,S.front,-P/2,P/3,SC,W*.46);  // Front
+  drawArc(ctx,cx,cy+24,S.rear,  P/2, P/3,SC,H*.46); // Rear
+  drawArc(ctx,cx-16,cy,S.left,   P,   P/4,SC,W*.35); // Left
+  drawArc(ctx,cx+16,cy,S.right,  0,   P/4,SC,W*.35); // Right
+  drawArc(ctx,cx-18,cy-22,S.lm,-3*P/4,P/5,SC,W*.42); // L.Mirror
+  drawArc(ctx,cx+18,cy-22,S.rm,-P/4,  P/5,SC,W*.42); // R.Mirror
+
+  // ── Bike silhouette ──
+  // Rear tyre
+  ctx.fillStyle='#0a1228';ctx.strokeStyle='rgba(100,160,255,.5)';ctx.lineWidth=1.5;
+  rr(ctx,cx-10,cy+42,20,14,3);ctx.fill();ctx.stroke();
+  // Body/frame
+  const bodyGrad=ctx.createLinearGradient(cx-16,cy-38,cx+16,cy+38);
+  bodyGrad.addColorStop(0,'#1a3a70');bodyGrad.addColorStop(1,'#0f2050');
+  rr(ctx,cx-16,cy-38,32,76,6);ctx.fillStyle=bodyGrad;ctx.fill();
+  ctx.strokeStyle='rgba(60,140,255,.35)';ctx.lineWidth=1;ctx.stroke();
+  // Tank
+  rr(ctx,cx-13,cy-10,26,24,5);
+  ctx.fillStyle='#223a7a';ctx.fill();
+  // Headstock/front
+  ctx.fillStyle='rgba(0,200,255,.12)';
+  rr(ctx,cx-12,cy-40,24,12,4);ctx.fill();
+  // Handlebars
+  ctx.fillStyle='#2a4a90';ctx.strokeStyle='rgba(80,160,255,.4)';ctx.lineWidth=1;
+  ctx.fillRect(cx-28,cy-44,56,4);ctx.strokeRect(cx-28,cy-44,56,4);
+  // Mirrors
+  ctx.fillStyle='#3a5a9f';
+  rr(ctx,cx-36,cy-46,10,5,2);ctx.fill();
+  rr(ctx,cx+26,cy-46,10,5,2);ctx.fill();
+  // Front tyre
+  ctx.fillStyle='#0a1228';ctx.strokeStyle='rgba(100,160,255,.5)';ctx.lineWidth=1.5;
+  rr(ctx,cx-10,cy-56,20,14,3);ctx.fill();ctx.stroke();
+
+  // Pothole indicator (downward arrow from center)
+  if(S.pot<30){
+    ctx.fillStyle=distColor(S.pot,.8);
+    ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('↓',cx,cy+8);
+    ctx.font='7px monospace';ctx.fillText('POT',cx,cy+18);
+  }
+
+  // Legend
+  ctx.font='9px monospace';ctx.textAlign='left';ctx.textBaseline='top';
+  [['<30cm',255,40,40],['<60cm',255,130,0],['<120cm',255,210,0],['>120cm',0,200,255]].forEach(([l,r,g,b],i)=>{
+    ctx.fillStyle=`rgba(${r},${g},${b},0.8)`;ctx.fillRect(8,8+i*14,8,8);
+    ctx.fillStyle='rgba(200,220,255,.5)';ctx.fillText(l,20,8+i*14);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  HAPTIC HELMET RING CANVAS
+// ═══════════════════════════════════════════════════
+const MN=['Front','F-L','Left','R-L','Rear','R-R','Right','F-R','L.Mir','R.Mir'];
+const MA=[-Math.PI/2,-3*Math.PI/4,Math.PI,3*Math.PI/4,Math.PI/2,Math.PI/4,0,-Math.PI/4,Math.PI,0];
+const MRad=[68,68,68,68,68,68,68,68,100,100];
+
+function mColor(p){
+  if(p<=0)return null;
+  if(p<0.3)return[0,220,136];
+  if(p<0.65)return[255,170,0];
+  return[255,68,85];
+}
+
+function drawHelmet(motors){
+  const cv=document.getElementById('cvHelmet');
+  const W=cv.offsetWidth||600,H=180;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  const cx=W/2,cy=H/2;
+  ctx.fillStyle='#0a1420';ctx.fillRect(0,0,W,H);
+
+  // Outer ring (guide)
+  ctx.beginPath();ctx.ellipse(cx,cy,105,78,0,0,Math.PI*2);
+  ctx.strokeStyle='rgba(80,140,255,.08)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+
+  // Helmet oval
+  ctx.beginPath();ctx.ellipse(cx,cy,58,42,0,0,Math.PI*2);
+  const hg=ctx.createRadialGradient(cx,cy,0,cx,cy,58);
+  hg.addColorStop(0,'#142040');hg.addColorStop(1,'#0a1530');
+  ctx.fillStyle=hg;ctx.fill();
+  ctx.strokeStyle='rgba(60,120,255,.2)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle='rgba(80,140,255,.15)';ctx.font='8px sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('HELMET',cx,cy);
+
+  // Direction labels inside helmet oval
+  ctx.fillStyle='rgba(80,140,255,.3)';ctx.font='7px monospace';
+  ctx.fillText('↑ F',cx,cy-28);ctx.fillText('↓ R',cx,cy+28);
+  ctx.fillText('L',cx-40,cy);ctx.fillText('R',cx+40,cy);
+
+  motors.forEach((p,i)=>{
+    const a=MA[i],r=MRad[i];
+    const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);
+    const isBS=(i===8||i===9);
+    const c=mColor(p);
+
+    // Blind-spot motors get outer ring
+    if(isBS){
+      ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);
+      ctx.strokeStyle=p>0?`rgba(255,170,0,.4)`:'rgba(60,120,255,.18)';
+      ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
+    }
+
+    // Motor circle
+    ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);
+    if(c){
+      const mg=ctx.createRadialGradient(x,y,0,x,y,9);
+      mg.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},0.95)`);
+      mg.addColorStop(1,`rgba(${c[0]},${c[1]},${c[2]},0.5)`);
+      ctx.fillStyle=mg;
+    }else{
+      ctx.fillStyle='rgba(255,255,255,.07)';
+    }
+    ctx.fill();
+    ctx.strokeStyle=c?`rgba(${c[0]},${c[1]},${c[2]},.5)`:'rgba(255,255,255,.1)';
+    ctx.lineWidth=1;ctx.stroke();
+
+    // Ripple on active
+    if(p>0&&c){
+      const rp=9+p*14;
+      ctx.beginPath();ctx.arc(x,y,rp,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${p*.3})`;
+      ctx.lineWidth=1.5;ctx.stroke();
+    }
+
+    // % label inside circle
+    if(p>0&&c){
+      ctx.fillStyle='#fff';ctx.font='bold 6px monospace';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(Math.round(p*100)+'%',x,y);
+    }
+
+    // Motor name outside circle
+    const lo=isBS?16:13;
+    const lx=x+Math.cos(a)*lo,ly=y+Math.sin(a)*lo;
+    const offx=Math.abs(Math.cos(a))<.3?0:Math.cos(a)>0?6:-6;
+    const offy=Math.sin(a)>0?8:-8;
+    ctx.fillStyle=c?`rgba(${c[0]},${c[1]},${c[2]},.7)`:'rgba(180,200,220,.25)';
+    ctx.font=isBS?'bold 7px monospace':'6px monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(MN[i],x+Math.cos(a)*(isBS?20:16),y+Math.sin(a)*(isBS?20:16));
+  });
+
+  // Title
+  ctx.fillStyle='rgba(80,140,255,.35)';ctx.font='8px monospace';
+  ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('10-motor haptic ring · Algorithm B',6,5);
+}
+
+// ═══════════════════════════════════════════════════
+//  OLED DISPLAYS — independent timers, fixed formula
+// ═══════════════════════════════════════════════════
+// flashInterval: 80ms at 10cm (fast/urgent), 800ms at 100cm (slow/warn)
+// Formula: 80 + 720 * clamp((dist-10)/90, 0, 1)
+function flashMs(d){
+  if(d<=0.5||d>=100)return 0;
+  return Math.round(80+720*Math.min(1,Math.max(0,(d-10)/90)));
+}
+
+function drawOLEDIdle(ctx,side){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,128,64);
+  // Nav arrow (simulated companion app)
+  ctx.fillStyle='#0d2a0d';ctx.font='bold 26px sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('↑',64,30);
+  ctx.fillStyle='#1a3f1a';ctx.font='7px monospace';
+  ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('CONTINUE 2.4km',64,50);
+  ctx.fillStyle='#0f1f0f';ctx.fillText((side==='L'?'LEFT':'RIGHT')+' CLEAR',64,3);
+}
+
+function drawOLEDWarn(ctx,dist,side,phase){
+  ctx.fillStyle='#000';ctx.fillRect(0,0,128,64);
+  if(!phase)return; // OFF phase = pure black (power-save flash)
+  const br=Math.max(0.3,1-(dist-10)/90); // brightness 0.3..1 by closeness
+  const rv=Math.round(255),gv=Math.round(40*(1-br)),bv=0;
+  ctx.fillStyle=`rgb(${rv},${gv},${bv})`;ctx.fillRect(0,0,128,15);
+  ctx.fillStyle='#fff';ctx.font='bold 8px monospace';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText((side==='L'?'!! LEFT':'!! RIGHT')+' BLIND SPOT',64,8);
+  // Large distance
+  ctx.fillStyle=`rgb(255,${Math.round(130*br)},0)`;
+  ctx.font='bold 26px monospace';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText(dist<100?dist.toFixed(0)+'cm':'>99',64,18);
+  ctx.fillStyle='rgba(255,100,0,.7)';ctx.font='7px monospace';
+  ctx.textBaseline='bottom';ctx.fillText('OBSTACLE DETECTED',64,63);
+}
+
+function tickOLED(oled,d,now){
+  const iv=flashMs(d);
+  if(iv===0){oled.active=false;oled.phase=false;return;}
+  oled.active=true;
+  if(now-oled.last>=iv){oled.last=now;oled.phase=!oled.phase;}
+}
+
+function drawOLEDs(now){
+  // Left OLED
+  tickOLED(OLED.L,S.lm,now);
+  const ctxL=document.getElementById('cvOledL').getContext('2d');
+  if(OLED.L.active){
+    drawOLEDWarn(ctxL,S.lm,'L',OLED.L.phase);
+  }else{
+    if(now-idleDrawL>1000){idleDrawL=now;drawOLEDIdle(ctxL,'L');}
+  }
+  // Right OLED
+  tickOLED(OLED.R,S.rm,now);
+  const ctxR=document.getElementById('cvOledR').getContext('2d');
+  if(OLED.R.active){
+    drawOLEDWarn(ctxR,S.rm,'R',OLED.R.phase);
+  }else{
+    if(now-idleDrawR>1000){idleDrawR=now;drawOLEDIdle(ctxR,'R');}
+  }
+  // Flash info labels
+  const fi=id=>document.getElementById(id);
+  fi('flashInfoL').textContent=OLED.L.active
+    ?`Flash: ${(1000/flashMs(S.lm)).toFixed(1)} Hz · ${OLED.L.phase?'ON':'off'} · ${S.lm.toFixed(0)}cm`
+    :'Idle · nav mode';
+  fi('flashInfoR').textContent=OLED.R.active
+    ?`Flash: ${(1000/flashMs(S.rm)).toFixed(1)} Hz · ${OLED.R.phase?'ON':'off'} · ${S.rm.toFixed(0)}cm`
+    :'Idle · nav mode';
+}
+
+// ═══════════════════════════════════════════════════
+//  LCD
+// ═══════════════════════════════════════════════════
+function drawLCD(){
+  AS.pkt++;
+  const ldr=S.ldr<8000?'NGT':'DAY';
+  const lm=S.lm<100?`LM:${S.lm.toFixed(0)}!`:'LM:OK ';
+  const rm=S.rm<100?`RM:${S.rm.toFixed(0)}!`:'RM:OK ';
+  const l1=`SPD:${String(Math.round(S.spd)).padStart(3)}km  LN:${S.lean>=0?' ':''}${S.lean.toFixed(1)}\u00b0`;
+  const l2=`F:${String(Math.round(S.front)).padStart(3)} R:${String(Math.round(S.rear)).padStart(3)} L:${String(Math.round(S.left)).padStart(3)} S:${String(Math.round(S.right)).padStart(3)}`;
+  const l3=`${ldr} ${AS.pot?'POT!':'OK  '} BM:${AS.highBeam?'HI':'LO'} ${lm} ${rm}`.slice(0,20);
+  const l4=`LINK:OK  PKT:${String(AS.pkt).padStart(8,'0').slice(-8)}  `;
+  document.getElementById('lcd').textContent=[l1,l2,l3,l4].join('\n');
+}
+
+// ═══════════════════════════════════════════════════
+//  RISK GAUGE
+// ═══════════════════════════════════════════════════
+function updateRisk(r){
+  const arc=document.getElementById('riskArc');
+  const total=173; // arc length of semicircle path
+  arc.setAttribute('stroke-dasharray',`${r/100*total} ${total}`);
+  document.getElementById('riskNum').textContent=r;
+  document.getElementById('riskBar').style.width=r+'%';
+  let col,lbl;
+  if(r<=30){col='var(--ok)';lbl='All clear';}
+  else if(r<=65){col='var(--warn)';lbl='Caution';}
+  else{col='var(--danger)';lbl='HIGH RISK';}
+  document.getElementById('riskBar').style.background=col;
+  document.getElementById('riskLbl').textContent=lbl;
+  document.getElementById('riskLbl').style.color=col;
+  const parts=[];
+  if(S.front>0&&S.front<300)parts.push(`front +${Math.round(40*(1-S.front/300))}`);
+  if(S.rear>0&&S.rear<200) parts.push(`rear +${Math.round(15*(1-S.rear/200))}`);
+  if(S.lm>0&&S.lm<100)     parts.push(`L.mir +${Math.round(8*(1-S.lm/100))}`);
+  if(S.rm>0&&S.rm<100)     parts.push(`R.mir +${Math.round(8*(1-S.rm/100))}`);
+  if(AS.pot)parts.push('pothole +12');
+  document.getElementById('riskFactors').textContent=parts.length?parts.join(' · '):'No risk factors';
+}
+
+// ═══════════════════════════════════════════════════
+//  ALGORITHM STATUS CARDS
+// ═══════════════════════════════════════════════════
+function updateAlgos(motors){
+  const aA=document.getElementById('algoA'),cA=document.getElementById('cardA');
+  if(AS.highBeam){aA.textContent='High beam active (front clear)';aA.style.color='var(--ok)';cA.className='algo-card';}
+  else{aA.textContent=`Low beam — vehicle at ${S.front.toFixed(0)}cm < 300cm`;aA.style.color='var(--warn)';cA.className='algo-card active';}
+
+  const active=motors.filter(p=>p>0).length;
+  const aB=document.getElementById('algoB'),cB=document.getElementById('cardB');
+  const bsOn=motors[8]>0||motors[9]>0;
+  if(active===0){aB.textContent='All 10 motors idle';aB.style.color='var(--text3)';cB.className='algo-card';}
+  else{
+    const mx=Math.round(Math.max(...motors)*100);
+    aB.textContent=`${active} motor${active>1?'s':''} active · max ${mx}%${bsOn?' · blind spot!':''}`;
+    aB.style.color=mx>65?'var(--danger)':'var(--warn)';
+    cB.className='algo-card'+(mx>65?' alert':' active');
+  }
+
+  const aC=document.getElementById('algoC'),cC=document.getElementById('cardC');
+  if(AS.pot){aC.textContent='POTHOLE DETECTED — IR + US + IMU fused';aC.style.color='var(--danger)';cC.className='algo-card alert';}
+  else{aC.textContent=`Monitoring · lean ${Math.abs(S.lean).toFixed(0)}° · road level`;aC.style.color='var(--text3)';cC.className='algo-card';}
+}
+
+// ═══════════════════════════════════════════════════
+//  RELAY PANEL (bug-fixed: L/R indicators wired to blind spot)
+// ═══════════════════════════════════════════════════
+function updateRelays(){
+  const brk=S.front>0&&S.front<30&&Math.abs(S.lean)<30;
+  const lBS=bsActive(S.lm),rBS=bsActive(S.rm);
+  const dot=(id,cls)=>{const d=document.getElementById(id);d.className='relay-dot '+cls;};
+  dot('r0',brk?'danger':'');
+  dot('r1',lBS?'danger':'');   // Left indicator ← blind spot (bug-fixed)
+  dot('r2',rBS?'danger':'');   // Right indicator ← blind spot (bug-fixed)
+  dot('r3',AS.highBeam?'on':'warn');
+  dot('r4','on');
+}
+
+// ═══════════════════════════════════════════════════
+//  BLIND SPOT PANEL
+// ═══════════════════════════════════════════════════
+function updateBS(motors){
+  function side(distEl,infoEl,barEl,cellEl,d,m,isLeft){
+    const active=bsActive(d);
+    const pct=Math.round(m*100);
+    const dist=d>0?d.toFixed(0)+' cm':'>400 cm';
+    const col=active?(d<30?'var(--danger)':d<60?'var(--warn)':'var(--text)'):'var(--ok)';
+    document.getElementById(distEl).textContent=dist;
+    document.getElementById(distEl).style.color=col;
+    const hz=active?(1000/flashMs(d)).toFixed(1):0;
+    const oledState=isLeft?OLED.L:OLED.R;
+    document.getElementById(infoEl).innerHTML=
+      `OLED: ${active?(oledState.phase?'● WARNING ON':'○ flash off'):'nav mode'}<br>`+
+      `Motor ${isLeft?8:9}: ${pct}%<br>`+
+      `Relay: ${active?'ACTIVE':'off'}`+
+      (active?`<br>Flash: ${hz} Hz`:'');
+    const fill=pct/100*100;
+    document.getElementById(barEl).style.width=fill+'%';
+    document.getElementById(barEl).style.background=col;
+    document.getElementById(cellEl).className='bs-cell'+(active?' alert':'');
+  }
+  side('bsLdist','bsLinfo','bsLbar','bsL',S.lm,motors[8],true);
+  side('bsRdist','bsRinfo','bsRbar','bsR',S.rm,motors[9],false);
+}
+
+// ═══════════════════════════════════════════════════
+//  JSON TELEMETRY
+// ═══════════════════════════════════════════════════
+function updateJSON(motors,r){
+  const o={
+    ts:Date.now(),pkt:AS.pkt,risk:r,
+    dist:{front:Math.round(S.front),rear:Math.round(S.rear),left:Math.round(S.left),right:Math.round(S.right),lMirror:Math.round(S.lm),rMirror:Math.round(S.rm),pothole:Math.round(S.pot)},
+    blindspot:{left:{dist:Math.round(S.lm),active:bsActive(S.lm),motor8_pct:Math.round(motors[8]*100),relay_fired:bsActive(S.lm),flash_hz:bsActive(S.lm)?parseFloat((1000/flashMs(S.lm)).toFixed(1)):0},
+               right:{dist:Math.round(S.rm),active:bsActive(S.rm),motor9_pct:Math.round(motors[9]*100),relay_fired:bsActive(S.rm),flash_hz:bsActive(S.rm)?parseFloat((1000/flashMs(S.rm)).toFixed(1)):0}},
+    relay:{brake:S.front<30,highBeam:AS.highBeam,leftInd:bsActive(S.lm),rightInd:bsActive(S.rm)},
+    imu:{lean:+S.lean.toFixed(1),accelZ:9.81},
+    pothole:AS.pot,ldr:{bike:S.ldr},gps:{spd:Math.round(S.spd),lat:19.876,lon:75.343},
+    haptic_pwm:motors.map(p=>Math.round(p*4095))
+  };
+  document.getElementById('jsonBox').textContent=JSON.stringify(o,null,2);
+}
+
+// ═══════════════════════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════════════════════
+let tick=0;
+function loop(){
+  const now=Date.now();
+  algoA();algoC();
+  const motors=algoB();
+  const r=computeRisk();
+
+  drawBike();
+  drawHelmet(motors);
+  drawOLEDs(now);
+
+  if(tick%2===0){
+    drawLCD();
+    updateRisk(r);
+    updateAlgos(motors);
+    updateRelays();
+    updateBS(motors);
+  }
+  if(tick%10===0)updateJSON(motors,r);
+  tick++;
+}
+
+// Initial OLED idle draw
+(function initOLEDs(){
+  const ctxL=document.getElementById('cvOledL').getContext('2d');
+  const ctxR=document.getElementById('cvOledR').getContext('2d');
+  drawOLEDIdle(ctxL,'L');drawOLEDIdle(ctxR,'R');
+  idleDrawL=idleDrawR=Date.now();
+})();
+
+setInterval(loop,50);
+loop();
+</script>
+</body>
+</html>
