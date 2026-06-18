@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TwinKey ARAS — Engineering Dossier</title>
+<style>
+  :root { --bg: #0a0f1a; --panel: #111827; --border: #1e293b; --text: #cbd5e1; --muted: #64748b; --cyan: #06b6d4; --indigo: #818cf8; --green: #34d399; --amber: #fbbf24; --rose: #f87171; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; font-size: 14px; line-height: 1.7; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 1.5rem; flex-wrap: wrap; }
+  header h1 { font-size: 1.5rem; font-weight: 900; color: #fff; letter-spacing: -0.03em; }
+  header h1 span { color: var(--cyan); }
+  header .meta { font-size: 0.72rem; color: var(--muted); font-family: monospace; display: flex; gap: 1rem; flex-wrap: wrap; }
+  header .badge { background: #064e3b; color: var(--green); padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; letter-spacing: 0.1em; font-size: 0.68rem; }
+
+  nav { background: var(--panel); border-bottom: 1px solid var(--border); padding: 0.6rem 2rem; display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.75rem; font-family: monospace; }
+  nav a { color: var(--muted); }
+  nav a:hover { color: #fff; text-decoration: none; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem; display: flex; flex-direction: column; gap: 3rem; }
+
+  section { display: flex; flex-direction: column; gap: 1.25rem; }
+  h2 { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+  h3 { font-size: 0.9rem; font-weight: 700; color: #e2e8f0; }
+  p { color: var(--text); }
+
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+  .metric { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+  .metric .val { font-size: 1.6rem; font-weight: 900; font-family: monospace; }
+  .metric .lbl { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-top: 0.2rem; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media(max-width: 600px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; }
+  .card h3 { margin-bottom: 0.6rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead { background: #0d1526; }
+  th { text-align: left; padding: 0.6rem 0.85rem; color: var(--muted); text-transform: uppercase; font-size: 0.65rem; letter-spacing: 0.12em; font-weight: 700; }
+  td { padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .tbl-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+
+  .label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted); font-weight: 700; }
+  .tag-green { color: var(--green); } .tag-amber { color: var(--amber); } .tag-rose { color: var(--rose); } .tag-cyan { color: var(--cyan); } .tag-ind { color: var(--indigo); }
+
+  .claim { background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--cyan); border-radius: 8px; padding: 1.25rem 1.5rem; }
+  .claim + .claim { border-left-color: var(--indigo); }
+  .claim + .claim + .claim { border-left-color: #a855f7; }
+  .claim + .claim + .claim + .claim { border-left-color: var(--amber); }
+  .claim h3 { margin-bottom: 0.5rem; }
+
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
+  pre { background: #060d1a; border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; overflow-x: auto; font-size: 0.75rem; line-height: 1.6; color: #a5b4fc; }
+  .kw { color: #c678dd; } .fn { color: #61afef; } .str { color: #98c379; } .cm { color: #5c6370; font-style: italic; } .nm { color: #d19a66; }
+
+  .hazard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  @media(max-width:500px){ .hazard-grid { grid-template-columns: 1fr; } }
+  .hazard { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 0.9rem 1rem; }
+  .hazard .hid { font-family: monospace; font-size: 0.78rem; margin-bottom: 0.3rem; }
+
+  .arch-row { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 1rem; align-items: center; }
+  @media(max-width:560px){ .arch-row { grid-template-columns: 1fr; } .arch-mid { display: none; } }
+  .arch-mid { text-align: center; font-family: monospace; font-size: 0.7rem; color: var(--muted); }
+
+  footer { border-top: 1px solid var(--border); padding: 1.25rem 2rem; text-align: center; font-size: 0.75rem; color: var(--muted); margin-top: 2rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TwinKey <span>ARAS</span></h1>
+  <div class="meta">
+    <span>Viraj Dandwate</span>
+    <span class="badge">PATENT PENDING</span>
+    <span>App No. 202521120497 · Govt. of India Patent Office</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#abstract">Abstract</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#hardware">Hardware</a>
+  <a href="#firmware">Firmware</a>
+  <a href="#hazards">Hazards</a>
+  <a href="#ai">Edge AI</a>
+  <a href="#validation">Validation</a>
+  <a href="#benchmarks">Benchmarks</a>
+  <a href="#claims">Patent Claims</a>
+  <a href="#references">References</a>
+</nav>
+
+<main>
+
+<!-- ABSTRACT -->
+<section id="abstract">
+  <h2>Abstract</h2>
+
+  <div class="metrics">
+    <div class="metric"><div class="val tag-cyan">&lt; 85ms</div><div class="lbl">Critical Latency</div></div>
+    <div class="metric"><div class="val tag-ind">2 Hz</div><div class="lbl">Data Resolution</div></div>
+    <div class="metric"><div class="val tag-rose">27</div><div class="lbl">Vectors / Cycle</div></div>
+    <div class="metric"><div class="val tag-amber">₹4,170</div><div class="lbl">Base BOM</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Problem: Thread Starvation</h3>
+      <p>Single-MCU safety stacks (ESP32, Raspberry Pi) must share one scheduler between collision logic, display rendering, WiFi, and flash writes. A 200 ms SPIFFS write or dropped TCP packet creates a 4.44 m blind spot at 80 km/h — enough to cause a fatal collision.</p>
+    </div>
+    <div class="card">
+      <h3>Solution: Dual-MCU Isolation</h3>
+      <p>TwinKey physically separates the actuation path from all non-critical tasks onto two ESP8266 modules linked by unidirectional UART. The actuator node (Node-A) only polls sensors and drives relays. The logger node (Node-B) handles everything else.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label" style="margin-bottom:0.5rem">Structured Abstract</div>
+    <p><strong style="color:#fff">Background.</strong> Low-cost rider assist stacks fail to isolate life-safety decisions from UI, networking, and storage workloads, creating scheduler-induced latency spikes at the exact moment deterministic actuation is required.</p>
+    <p style="margin-top:0.6rem"><strong style="color:#fff">Method.</strong> A hardware-isolated actuator node polls distributed ultrasonic sensors and executes relay logic; a secondary logger node handles rendering, storage, and communications. A tethered smartphone provides contextual classification, OCR, and gyroscope-assisted false-positive suppression.</p>
+    <p style="margin-top:0.6rem"><strong style="color:#fff">Contribution.</strong> Physically decoupled brake actuation, adaptive hazard envelopes, gyro-cancelled lean suppression, and acoustic-vision fusion on low-cost commodity hardware.</p>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <h2>Architecture</h2>
+
+  <div class="arch-row">
+    <div class="card">
+      <div class="label" style="margin-bottom:0.4rem; color:var(--cyan)">Node-A — Actuator (Critical Path)</div>
+      <ul style="padding-left:1.1rem; display:flex; flex-direction:column; gap:0.3rem;">
+        <li>Polls up to 10× HC-SR04 via TDMA multiplexing</li>
+        <li>Computes drag coefficient from DHT11 + LDR</li>
+        <li>Drives brake relay &amp; directional haptics directly</li>
+        <li>WiFi radio <strong style="color:var(--rose)">hardware-disabled</strong></li>
+        <li>Emits 64-byte state vector to Node-B over UART</li>
+        <li>Never waits for ACK from logger</li>
+      </ul>
+    </div>
+    <div class="arch-mid">
+      UART<br>115200<br>8N1<br>→
+    </div>
+    <div class="card">
+      <div class="label" style="margin-bottom:0.4rem; color:var(--indigo)">Node-B — Logger / AP (Non-Critical)</div>
+      <ul style="padding-left:1.1rem; display:flex; flex-direction:column; gap:0.3rem;">
+        <li>SPIFFS CSV logging + flash rotation</li>
+        <li>3× OLED + 1× LCD display rendering</li>
+        <li>AsyncWebServer dashboard (port 80)</li>
+        <li>WiFi AP+STA mode, Bluetooth relay</li>
+        <li>Error counters, boot diagnostics</li>
+        <li>Replay + forensic state reconstruction</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <p>Brake assist decisions are <strong style="color:#fff">local to Node-A only</strong>. If Node-B fails or reboots, Node-A continues operating. If Node-A fails, an inline mechanical bypass preserves the rider's manual hydraulic braking untouched. The system can only add braking force — never prevent it.</p>
+  </div>
+</section>
+
+<!-- HARDWARE -->
+<section id="hardware">
+  <h2>Hardware Specifications</h2>
+
+  <div class="grid-2">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th colspan="2">Node-A — ESP8266 (Real-Time Actuator)</th></tr></thead>
+        <tbody>
+          <tr><td>Clock</td><td class="tag-cyan">80 MHz</td></tr>
+          <tr><td>Sensors</td><td>Up to 10× HC-SR04</td></tr>
+          <tr><td>Relay Control</td><td>5V opto-isolated</td></tr>
+          <tr><td>Haptics</td><td>L/R micro-vibration</td></tr>
+          <tr><td>Env sensors</td><td>DHT11 + LDR (ADC)</td></tr>
+          <tr><td>WiFi</td><td class="tag-rose">HARDWARE DISABLED</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th colspan="2">Node-B — ESP8266 (Logger / AP)</th></tr></thead>
+        <tbody>
+          <tr><td>Clock</td><td class="tag-cyan">160 MHz (overclocked)</td></tr>
+          <tr><td>Flash</td><td>4 MB (3 MB SPIFFS)</td></tr>
+          <tr><td>Displays</td><td>3× OLED + 1× LCD (I2C)</td></tr>
+          <tr><td>I2C Addresses</td><td>0x3C, 0x27</td></tr>
+          <tr><td>Web server</td><td>AsyncWebServer (port 80)</td></tr>
+          <tr><td>Network</td><td class="tag-cyan">WIFI_AP_STA</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Component</th><th>Role</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>LM2596S Buck Converter</td><td>12V → 5V power rail</td><td>Avoids AMS1117 thermal bleed, tested to 45°C ambient (Rahata, MH)</td></tr>
+        <tr><td>ULN2003A Darlington Array</td><td>Relay driver</td><td>Per relay bank</td></tr>
+        <tr><td>MCP23017</td><td>GPIO expander</td><td>For ultrasonic array beyond native GPIO</td></tr>
+        <tr><td>MPU6050</td><td>IMU (gyro + accel)</td><td>Lean-angle cancellation source</td></tr>
+        <tr><td>BME280</td><td>Environmental</td><td>Pressure + humidity + temp</td></tr>
+        <tr><td>NE555 Watchdog</td><td>Heartbeat supervision</td><td>Independent of firmware</td></tr>
+        <tr><td>MicroSD module</td><td>Extended storage</td><td>On Node-B</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="text-align:center">
+      <div class="label">Idle Current Draw</div>
+      <div style="font-size:1.6rem; font-family:monospace; color:#fff; margin-top:0.3rem">110 mA</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="label">Peak Draw (Relays Active)</div>
+      <div style="font-size:1.6rem; font-family:monospace; color:var(--rose); margin-top:0.3rem">680 mA</div>
+    </div>
+  </div>
+</section>
+
+<!-- FIRMWARE -->
+<section id="firmware">
+  <h2>Firmware Logic</h2>
+
+  <pre><code><span class="cm">// Dynamic threshold based on DHT11 + LDR readings</span>
+<span class="kw">float</span> <span class="fn">calculateDragCoefficient</span>(<span class="kw">int</span> humidity, <span class="kw">int</span> light) {
+    <span class="kw">float</span> drag = <span class="nm">1.0</span>;
+    <span class="kw">if</span> (humidity > <span class="nm">80</span>) drag += <span class="nm">0.3</span>; <span class="cm">// Wet road: expand braking envelope 30%</span>
+    <span class="kw">if</span> (light < <span class="nm">20</span>)    drag += <span class="nm">0.2</span>; <span class="cm">// Low visibility: expand 20%</span>
+    <span class="kw">return</span> drag;
+}
+
+<span class="kw">void</span> <span class="fn">loop</span>() {
+    <span class="kw">unsigned long</span> now = <span class="fn">millis</span>();
+    <span class="kw">if</span> (now - previousPing >= PING_INTERVAL) {
+        previousPing = now;
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nm">0</span>; i < NUM_SENSORS; i++)
+            distances[i] = <span class="fn">getDistance</span>(sensorMap[i]); <span class="cm">// TDMA — no cross-talk</span>
+
+        <span class="kw">float</span> drag = <span class="fn">calculateDragCoefficient</span>(<span class="fn">readDHT</span>(), <span class="fn">readLDR</span>());
+        <span class="kw">int</span>   critDist = BASE_THRESHOLD * drag;
+        <span class="kw">bool</span>  hazard   = <span class="kw">false</span>;
+
+        <span class="kw">for</span> (<span class="kw">int</span> i = <span class="nm">0</span>; i < NUM_SENSORS; i++) {
+            <span class="kw">if</span> (distances[i] > <span class="nm">0</span> && distances[i] < critDist) {
+                hazard = <span class="kw">true</span>;
+                <span class="fn">triggerHaptics</span>(i); <span class="cm">// Directional side alert</span>
+                <span class="kw">break</span>;
+            }
+        }
+        <span class="fn">digitalWrite</span>(BRAKE_RELAY_PIN, hazard ? HIGH : LOW);
+        <span class="fn">transmitStateToLogger</span>(distances, hazard); <span class="cm">// Fire-and-forget UART</span>
+    }
+}</code></pre>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Pipeline Stage</th><th>Typical</th><th>Worst Case</th></tr></thead>
+      <tbody>
+        <tr><td>Sensor acquisition (echo capture)</td><td>12 ms</td><td>18 ms</td></tr>
+        <tr><td>Threshold math</td><td>7 ms</td><td>10 ms</td></tr>
+        <tr><td>Decision gate</td><td>5 ms</td><td>8 ms</td></tr>
+        <tr><td>Relay coil saturation</td><td>18 ms</td><td>25 ms</td></tr>
+        <tr><td>UART log handoff</td><td>9 ms</td><td>14 ms</td></tr>
+        <tr><td><strong style="color:#fff">Total actuation</strong></td><td class="tag-green"><strong>~45 ms</strong></td><td class="tag-amber"><strong>~75 ms</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- HAZARDS -->
+<section id="hazards">
+  <h2>System Theory &amp; Hazard Model</h2>
+  <p>The primary safety risk in a low-cost rider-assist stack is not sensing error — it's computational interference between sensing, rendering, storage, and actuation. TwinKey treats latency isolation as the primary architectural safety requirement.</p>
+
+  <div class="hazard-grid">
+    <div class="hazard">
+      <div class="hid tag-cyan">H-01 Scheduler Contention</div>
+      <p>Blocking storage, display, or radio tasks preempt collision-response logic. <strong>Mitigation:</strong> physical compute segregation.</p>
+    </div>
+    <div class="hazard">
+      <div class="hid tag-ind">H-02 Acoustic Ambiguity</div>
+      <p>Range sensing cannot distinguish object semantics. <strong>Mitigation:</strong> mobile vision enrichment + contextual policy gating.</p>
+    </div>
+    <div class="hazard">
+      <div class="hid tag-green">H-03 Lean-Induced False Positives</div>
+      <p>Lateral sensors read asphalt reflections during aggressive cornering. <strong>Mitigation:</strong> gyroscope-informed lateral suppression.</p>
+    </div>
+    <div class="hazard">
+      <div class="hid tag-amber">H-04 Partial System Failure</div>
+      <p>Logger / UI reboots or disconnects. <strong>Mitigation:</strong> fail-operational Node-A + manual hydraulic bypass.</p>
+    </div>
+  </div>
+</section>
+
+<!-- EDGE AI -->
+<section id="ai">
+  <h2>Edge AI &amp; Sensor Fusion</h2>
+
+  <div class="card">
+    <p>A tethered Android device runs quantized TensorFlow Lite object detection on its NPU. INT8 quantization reduces the model 4× and improves inference speed with ~1–2% mAP loss. Acoustic proximity and visual classification are cross-referenced before any brake intervention.</p>
+    <pre style="margin-top:1rem"><code><span class="cm">// Cross-modal fusion gate</span>
+<span class="kw">if</span> (hardware_proximity < <span class="nm">200</span>cm) {
+    <span class="kw">if</span> (yolo_class == <span class="str">"Vehicle"</span> || yolo_class == <span class="str">"Pedestrian"</span>)
+        <span class="fn">execute_emergency_brake_relay</span>();
+    <span class="kw">else if</span> (yolo_class == <span class="str">"Road_Barrier"</span>)
+        <span class="fn">execute_haptic_warning_only</span>();
+}</code></pre>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Model</th><th>Size</th><th>mAP</th><th>Inference</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td>YOLOv8n INT8</td><td>6 MB</td><td>0.84</td><td>42 ms</td><td class="tag-green">Primary</td></tr>
+        <tr><td>MobileNet SSD</td><td>9 MB</td><td>0.78</td><td>58 ms</td><td class="tag-cyan">Fallback</td></tr>
+        <tr><td>YOLOv8s FP16</td><td>22 MB</td><td>0.88</td><td>91 ms</td><td class="tag-amber">Selective</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:0.5rem">Rider Interface Principles</h3>
+    <ul style="padding-left:1.1rem; display:flex; flex-direction:column; gap:0.4rem;">
+      <li>Urgency communicated through haptic pulse pattern + side placement, not text.</li>
+      <li>Visual detail scales down as speed or maneuver intensity increases.</li>
+      <li>Assistive braking must be additive, predictable, and non-mysterious.</li>
+      <li>False positives destroy trust faster than limited capability — suppression quality is central.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- VALIDATION -->
+<section id="validation">
+  <h2>Validation</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Test</th><th>Cycles / Duration</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Static obstacle approach</td><td>500</td><td class="tag-green">Pass</td></tr>
+        <tr><td>Lean-angle false-positive suppression</td><td>220</td><td class="tag-green">Pass</td></tr>
+        <tr><td>Power cycling (Node-B reboot mid-ride)</td><td>100</td><td class="tag-green">Pass</td></tr>
+        <tr><td>Hot ambient soak</td><td>48 hrs</td><td class="tag-green">Pass</td></tr>
+        <tr><td>Rain simulation / splash exposure</td><td>18 rides</td><td class="tag-amber">Conditional</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Trial Type</th><th>Pass %</th><th>Conditional %</th></tr></thead>
+      <tbody>
+        <tr><td>Obstacle trials</td><td class="tag-green">98%</td><td>2%</td></tr>
+        <tr><td>Lean suppression</td><td class="tag-green">99%</td><td>1%</td></tr>
+        <tr><td>Heat soak</td><td class="tag-green">96%</td><td>4%</td></tr>
+        <tr><td>Power cycling</td><td class="tag-green">100%</td><td>0%</td></tr>
+        <tr><td>Rain trials</td><td class="tag-amber">82%</td><td>18%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Acoustic Cross-Talk Prevention</h3>
+    <p>Up to 10 HC-SR04 sensors firing 40 kHz pulses risk mutual echo contamination. Node-A multiplexes triggers via TDMA — guaranteeing acoustic silence on all inactive sensors before the next pulse fires.</p>
+  </div>
+</section>
+
+<!-- BENCHMARKS -->
+<section id="benchmarks">
+  <h2>Benchmarks — Architecture Comparison</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Platform</th>
+          <th>Critical Path Isolation</th>
+          <th>Brake Trigger Latency</th>
+          <th>Logging Impact</th>
+          <th>Field Repairability</th>
+          <th>Indicative Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong style="color:#fff">TwinKey Dual-MCU</strong></td>
+          <td class="tag-green">Physical separation</td>
+          <td>&lt; 85 ms</td>
+          <td>None on Node-A</td>
+          <td>High</td>
+          <td>₹4,170 – ₹6,900</td>
+        </tr>
+        <tr>
+          <td>Single ESP32</td>
+          <td class="tag-rose">Shared scheduler</td>
+          <td>140 – 260 ms</td>
+          <td>High jitter under I/O</td>
+          <td>Medium</td>
+          <td>₹2,500 – ₹4,100</td>
+        </tr>
+        <tr>
+          <td>Raspberry Pi + Relay Hat</td>
+          <td class="tag-amber">OS-dependent</td>
+          <td>180 – 420 ms</td>
+          <td>Filesystem contention</td>
+          <td>Low on-vehicle</td>
+          <td>₹7,000 – ₹11,000</td>
+        </tr>
+        <tr>
+          <td>Automotive Radar Entry Stack</td>
+          <td class="tag-green">Dedicated ASIC</td>
+          <td>35 – 90 ms</td>
+          <td>Low</td>
+          <td>Low for builders</td>
+          <td>₹22,000+</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- PATENT CLAIMS -->
+<section id="claims">
+  <h2>Patent Claims — Application No. 202521120497</h2>
+
+  <div class="claim">
+    <h3>[01] Decoupled Dual-MCU Actuation Interlock</h3>
+    <p>An electronic safety system for two-wheeled vehicles comprising: a primary MCU strictly and exclusively dedicated to physical sensor polling and hardware relay actuation; a secondary MCU linked via serialized communication exclusively dedicated to UI generation, wireless telecommunications, and non-volatile data storage. Wherein said architecture completely isolates life-safety brake actuation threads from latency induced by network or file-writing operations, mathematically guaranteeing actuation response times of less than 100 milliseconds.</p>
+  </div>
+
+  <div class="claim">
+    <h3>[02] Contextual Hazard Evaluation Matrix</h3>
+    <p>The system as in claim 1, further comprising dynamic threshold adjustment wherein base acoustic proximity readings are continuously multiplied against environmental drag coefficients derived from onboard LDR and DHT sensors; wherein the system autonomously expands its physical braking envelope during conditions representing low-visibility or reduced road surface friction (e.g., &gt;80% relative humidity).</p>
+  </div>
+
+  <div class="claim">
+    <h3>[03] Hybrid Sensor-Vision Data Fusion Pipeline</h3>
+    <p>A method for collision mitigation utilizing the hardware in claim 1, comprising Bluetooth transmission of localized sensor state vectors to a tethered smart device; wherein the smart device uses onboard optical hardware and quantized YOLO object detection models to visually classify physical obstacles. The system cross-references visual classification against acoustic proximity to dictate context-aware haptic feedback intensity (e.g., ignoring static guardrails while highlighting crossing pedestrians).</p>
+  </div>
+
+  <div class="claim">
+    <h3>[04] Gyro-Canceled Acoustic Validation</h3>
+    <p>A mechanism for suppression of false-positive collision alerts on tilting vehicles, comprising algorithmic fusion of multiaxial gyroscope data and lateral ultrasonic echoes. Wherein the system dynamically ignores acoustic proximity alerts on the lateral flank corresponding to the vehicle's lean direction, recognizing said echoes as road-surface reflections rather than physical obstacles.</p>
+  </div>
+
+  <div class="card">
+    <h3>Novelty Separation</h3>
+    <p><strong style="color:var(--green)">Novel core:</strong> Physical separation of actuation from non-critical tasks; context-aware threshold expansion; hybrid acoustic-vision fusion; gyroscope-assisted lateral suppression on a tilting platform.</p>
+    <p style="margin-top:0.5rem"><strong style="color:var(--muted)">Non-novel substrate:</strong> Generic use of ultrasonic sensors, common MCU boards, smartphone pairing, or dashboard displays — these are enabling implementation detail, not the inventive step.</p>
+  </div>
+</section>
+
+<!-- REFERENCES -->
+<section id="references">
+  <h2>Notes &amp; References</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td class="tag-amber">[N1]</td><td>Latency, cost, and storage values are engineering targets or prototype-scale observations used for design framing; not certified production guarantees.</td></tr>
+        <tr><td class="tag-amber">[N2]</td><td>Claim-mapping discussion is editorial; final legal scope remains subject to patent drafting and examination.</td></tr>
+        <tr><td class="tag-amber">[N3]</td><td>Architecture figures are schematic communication diagrams — not pin-accurate electrical schematics.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Ref</th><th>Source</th><th>Used For</th></tr></thead>
+      <tbody>
+        <tr><td class="tag-cyan">[R1]</td><td>Deterministic Embedded Control Literature</td><td>Scheduling, watchdog design, bounded-latency patterns for safety-relevant MCU systems.</td></tr>
+        <tr><td class="tag-cyan">[R2]</td><td>Ultrasonic Array Behavior Notes</td><td>Low-cost ranging limitations, cross-talk, and perception ambiguity in dense acoustic layouts.</td></tr>
+        <tr><td class="tag-cyan">[R3]</td><td>Mobile Edge Vision Deployment Practice</td><td>Quantized TFLite object detection workflows for mobile-class hardware.</td></tr>
+        <tr><td class="tag-cyan">[R4]</td><td>Human Factors Guidance</td><td>Alert modality selection, cognitive load reduction, tactile vs. visual signaling in attention-constrained vehicle environments.</td></tr>
+        <tr><td class="tag-cyan">[R5]</td><td>Patent Structuring &amp; Claim-Separation Practice</td><td>Distinguishing inventive concept from enabling commodity hardware in technical disclosures.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>TwinKey ARAS · Viraj Dandwate · Patent Pending 202521120497 · Government of India Patent Office</footer>
+
+</body>
+</html>
