@@ -1,895 +1,848 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TwinKey ARAS — Advanced Rider Assistive System</title>
-<style>
-:root{
-  --bg:#030b17;--bg2:#050f1e;--surf:rgba(255,255,255,.05);
-  --surf2:rgba(255,255,255,.09);--border:rgba(80,160,255,.18);
-  --accent:#00c8ff;--accent2:#00ffaa;--danger:#ff4455;
-  --warn:#ffaa00;--ok:#00ee88;--text:#ddf0ff;--text2:#88aabb;
-  --text3:#445566;--r:16px;--r-sm:10px;
-  --shadow:0 20px 60px rgba(0,0,0,.5);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  background:var(--bg);color:var(--text);min-height:100vh;
-  background-image:radial-gradient(ellipse at 20% 10%,rgba(0,150,255,.12) 0%,transparent 50%),
-    radial-gradient(ellipse at 80% 90%,rgba(0,255,150,.08) 0%,transparent 50%)}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive TwinKey ARAS dual-MCU rider safety simulator.">
+  <meta name="theme-color" content="#071019">
+  <title>TwinKey ARAS — Live Safety Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="site.css">
+  <style>
+    :root {
+      --bg: #071019;
+      --bg-2: #091521;
+      --panel: rgba(12, 27, 41, .86);
+      --panel-2: rgba(16, 35, 52, .82);
+      --line: rgba(141, 180, 203, .14);
+      --line-strong: rgba(141, 180, 203, .25);
+      --text: #edf7fb;
+      --soft: #a5bdc9;
+      --muted: #678493;
+      --cyan: #3dd8f5;
+      --green: #49e6a0;
+      --amber: #ffbd66;
+      --red: #ff637d;
+      --purple: #aa8bff;
+      --mono: "JetBrains Mono", monospace;
+      --sans: "DM Sans", sans-serif;
+      --radius: 18px;
+    }
 
-/* ── NAV ─────────────────────── */
-nav{display:flex;align-items:center;justify-content:space-between;
-  padding:14px 28px;border-bottom:1px solid var(--border);
-  background:rgba(3,11,23,.85);backdrop-filter:blur(12px);
-  position:sticky;top:0;z-index:100}
-.nav-logo{font-size:1.05rem;font-weight:800;letter-spacing:.04em;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.nav-tag{font-size:.75rem;color:var(--text2);letter-spacing:.06em;
-  border:1px solid var(--border);border-radius:20px;padding:3px 10px}
+    * { box-sizing: border-box; }
+    html { color-scheme: dark; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% -10%, rgba(61,216,245,.12), transparent 32rem),
+        radial-gradient(circle at 92% 20%, rgba(170,139,255,.10), transparent 29rem),
+        linear-gradient(160deg, var(--bg), #050b11 72%);
+      font-family: var(--sans);
+    }
 
-/* ── HERO ────────────────────── */
-.hero{text-align:center;padding:60px 24px 50px;max-width:780px;margin:0 auto}
-.hero-badge{display:inline-block;font-size:.8rem;letter-spacing:.12em;color:var(--accent);
-  border:1px solid rgba(0,200,255,.3);border-radius:20px;padding:5px 14px;margin-bottom:20px}
-.hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;line-height:1.15;
-  background:linear-gradient(135deg,#fff 30%,var(--accent));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px}
-.hero p{font-size:1.05rem;color:var(--text2);line-height:1.7;margin-bottom:30px}
-.hero-stats{display:flex;gap:20px;justify-content:center;flex-wrap:wrap}
-.stat-pill{background:var(--surf2);border:1px solid var(--border);border-radius:12px;
-  padding:12px 22px;text-align:center}
-.stat-num{font-size:1.6rem;font-weight:700;color:var(--accent);display:block}
-.stat-lbl{font-size:.75rem;color:var(--text2);letter-spacing:.05em}
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      opacity: .18;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(120,170,190,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(120,170,190,.08) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 85%);
+    }
 
-/* ── FEATURE CARDS ───────────── */
-.features{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-  gap:16px;max-width:1200px;margin:0 auto 50px;padding:0 24px}
-.feat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);
-  padding:22px;transition:transform .2s,border-color .2s,box-shadow .2s}
-.feat-card:hover{transform:translateY(-3px);border-color:rgba(0,200,255,.35);
-  box-shadow:0 12px 40px rgba(0,200,255,.08)}
-.feat-icon{font-size:1.8rem;margin-bottom:12px;display:block}
-.feat-title{font-size:.95rem;font-weight:700;margin-bottom:6px;color:var(--text)}
-.feat-desc{font-size:.83rem;color:var(--text2);line-height:1.6}
+    button, input { font: inherit; }
+    button { color: inherit; }
 
-/* ── SIMULATOR WRAPPER ───────── */
-.sim-section{max-width:1280px;margin:0 auto;padding:0 20px 60px}
-.sim-section-head{text-align:center;margin-bottom:28px}
-.sim-section-head h2{font-size:1.6rem;font-weight:800;margin-bottom:8px}
-.sim-section-head p{font-size:.9rem;color:var(--text2)}
-.scenarios{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
-.scen-btn{background:var(--surf2);border:1px solid var(--border);border-radius:24px;
-  color:var(--text);padding:10px 20px;font-size:.85rem;font-weight:600;cursor:pointer;
-  transition:all .2s;white-space:nowrap}
-.scen-btn:hover{background:rgba(0,200,255,.12);border-color:rgba(0,200,255,.4);
-  transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,200,255,.1)}
-.scen-btn.danger:hover{background:rgba(255,68,85,.12);border-color:rgba(255,68,85,.4)}
+    .app {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: clamp(1rem, 2.5vw, 2rem);
+    }
 
-/* ── SIM GRID ────────────────── */
-.sim-grid{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr) minmax(0,270px);
-  gap:16px;align-items:start}
-@media(max-width:1024px){.sim-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:640px){.sim-grid{grid-template-columns:1fr}}
+    .eyebrow {
+      margin: 0;
+      color: var(--cyan);
+      font: 700 .67rem/1.2 var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
 
-/* ── PANELS ──────────────────── */
-.panel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);
-  padding:18px;box-shadow:var(--shadow)}
-.panel+.panel{margin-top:14px}
-.panel-title{font-size:.72rem;font-weight:700;letter-spacing:.1em;color:var(--text3);
-  text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:7px}
-.panel-title::before{content:'';display:block;width:3px;height:12px;
-  border-radius:2px;background:var(--accent)}
+    .masthead {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 1.25rem;
+      margin: 1.4rem 0 1.25rem;
+    }
 
-/* ── SLIDERS ─────────────────── */
-.srow{display:flex;align-items:center;gap:9px;margin-bottom:9px}
-.srow.highlight .slbl{color:var(--warn);font-weight:600}
-.slbl{font-size:.82rem;color:var(--text2);min-width:68px;flex-shrink:0}
-.sval{font-size:.82rem;font-weight:700;min-width:38px;text-align:right;color:var(--text)}
-.sval.alert{color:var(--danger)}
-input[type=range]{flex:1;height:5px;border-radius:4px;accent-color:var(--accent);cursor:pointer;min-width:0}
+    .masthead h1 {
+      max-width: 850px;
+      margin: .55rem 0 0;
+      font-size: clamp(2rem, 5vw, 4.4rem);
+      line-height: .98;
+      letter-spacing: -.055em;
+    }
 
-/* ── LCD ─────────────────────── */
-.lcd-wrap{background:#020d04;border:1px solid rgba(0,255,80,.14);border-radius:12px;
-  padding:14px 16px;margin-bottom:14px;position:relative;overflow:hidden}
-.lcd-wrap::before{content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(0deg,rgba(0,255,0,.015) 0px,rgba(0,255,0,.015) 1px,transparent 1px,transparent 4px);
-  pointer-events:none}
-.lcd{font-family:ui-monospace,SFMono-Regular,monospace;font-size:11.5px;
-  line-height:1.72;color:#7dff9a;letter-spacing:.6px;white-space:pre;position:relative;z-index:1}
+    .masthead h1 span { color: var(--soft); font-weight: 500; }
 
-/* ── CANVAS AREAS ────────────── */
-.canvas-wrap{border-radius:14px;overflow:hidden;border:1px solid var(--border);
-  background:rgba(0,0,0,.3);margin-bottom:14px}
-canvas{display:block;width:100%;image-rendering:auto}
-.oled-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.oled-wrap{border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.08);
-  background:#000;position:relative}
-.oled-label{font-size:.7rem;color:var(--text3);text-align:center;padding:4px 0 2px;
-  background:rgba(0,0,0,.5)}
-.oled-wrap canvas{display:block;width:100%}
-.flash-info{font-size:.68rem;color:var(--text3);text-align:center;padding:2px 4px;
-  background:rgba(0,0,0,.4)}
+    .session-controls { display: flex; align-items: center; gap: .55rem; }
 
-/* ── RISK GAUGE ──────────────── */
-.risk-wrap{text-align:center;padding:10px 0 16px;position:relative}
-.risk-svg{display:block;margin:0 auto 6px}
-.risk-label{font-size:.72rem;color:var(--text3);letter-spacing:.08em}
+    .btn {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      border: 1px solid var(--line-strong);
+      border-radius: 11px;
+      padding: .65rem .85rem;
+      color: var(--soft);
+      background: rgba(255,255,255,.035);
+      cursor: pointer;
+      transition: 160ms ease;
+    }
 
-/* ── ALGO CARDS ──────────────── */
-.algo-card{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:var(--r-sm);
-  padding:12px 14px;margin-bottom:10px;transition:border-color .3s}
-.algo-card.active{border-color:rgba(255,170,0,.4);background:rgba(255,170,0,.05)}
-.algo-card.alert{border-color:rgba(255,68,85,.5);background:rgba(255,68,85,.07)}
-.algo-name{font-size:.7rem;font-weight:700;letter-spacing:.08em;color:var(--text3);margin-bottom:4px}
-.algo-status{font-size:.88rem;font-weight:600;line-height:1.3}
+    .btn:hover { border-color: rgba(61,216,245,.5); color: #fff; transform: translateY(-1px); }
+    .btn.is-active { color: #06140f; border-color: var(--green); background: var(--green); }
+    .btn--danger { color: #ffd8de; border-color: rgba(255,99,125,.38); background: rgba(255,99,125,.10); }
+    .btn--danger:hover { border-color: var(--red); background: rgba(255,99,125,.18); }
 
-/* ── RELAY GRID ──────────────── */
-.relay-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
-.relay-item{text-align:center}
-.relay-dot{width:18px;height:18px;border-radius:50%;margin:0 auto 4px;
-  transition:background .2s,box-shadow .2s;background:#223}
-.relay-dot.on{background:var(--ok);box-shadow:0 0 0 5px rgba(0,238,136,.2)}
-.relay-dot.warn{background:var(--warn);box-shadow:0 0 0 5px rgba(255,170,0,.2)}
-.relay-dot.danger{background:var(--danger);box-shadow:0 0 0 5px rgba(255,68,85,.2)}
-.relay-name{font-size:.62rem;color:var(--text3);line-height:1.3}
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 14%, transparent);
+    }
 
-/* ── BLIND SPOT PANEL ────────── */
-.bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:10px;overflow:hidden}
-.bs-cell{background:var(--bg2);padding:12px;transition:background .3s}
-.bs-cell.alert{background:rgba(255,68,85,.08)}
-.bs-side{font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--text3);margin-bottom:5px}
-.bs-dist{font-size:1.5rem;font-weight:800;margin-bottom:3px;transition:color .3s}
-.bs-info{font-size:.72rem;color:var(--text2);line-height:1.5}
-.bs-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);
-  margin-top:6px;overflow:hidden}
-.bs-fill{height:100%;border-radius:2px;transition:width .3s,background .3s}
+    .system-strip {
+      display: grid;
+      grid-template-columns: minmax(230px, 1.45fr) repeat(4, minmax(120px, .7fr));
+      overflow: hidden;
+      margin-bottom: 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(8,19,29,.8);
+      box-shadow: 0 18px 55px rgba(0,0,0,.22);
+    }
 
-/* ── JSON ────────────────────── */
-.json-box{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);
-  border-radius:10px;padding:10px 12px;font-family:ui-monospace,monospace;
-  font-size:9.5px;color:var(--text2);max-height:160px;overflow-y:auto;white-space:pre;line-height:1.55}
-.json-box::-webkit-scrollbar{width:4px}
-.json-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .system-cell {
+      min-height: 84px;
+      padding: 1rem 1.1rem;
+      border-right: 1px solid var(--line);
+    }
+    .system-cell:last-child { border-right: 0; }
+    .system-cell__label { color: var(--muted); font: 700 .62rem/1 var(--mono); letter-spacing: .13em; text-transform: uppercase; }
+    .system-cell__value { margin-top: .55rem; color: #fff; font: 700 1.05rem/1.1 var(--mono); }
+    .system-cell__sub { margin-top: .35rem; color: var(--muted); font-size: .72rem; }
 
-/* ── FOOTER ──────────────────── */
-footer{text-align:center;padding:30px;font-size:.8rem;color:var(--text3);
-  border-top:1px solid var(--border)}
-footer strong{color:var(--text2)}
+    .system-state { display: flex; align-items: center; gap: .8rem; }
+    .system-state__icon {
+      width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center;
+      border-radius: 50%; color: var(--green); background: rgba(73,230,160,.09); border: 1px solid rgba(73,230,160,.28);
+    }
 
-/* ── UTILS ───────────────────── */
-.divider{height:1px;background:var(--border);margin:14px 0}
-.tag{display:inline-block;font-size:.7rem;border-radius:6px;
-  padding:2px 8px;font-weight:600;letter-spacing:.04em}
-.tag.ok{background:rgba(0,238,136,.12);color:var(--ok)}
-.tag.warn{background:rgba(255,170,0,.12);color:var(--warn)}
-.tag.danger{background:rgba(255,68,85,.12);color:var(--danger)}
-</style>
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(250px, .78fr) minmax(430px, 1.55fr) minmax(270px, .82fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .stack { display: grid; gap: 1rem; min-width: 0; }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, var(--panel), rgba(7,18,28,.92));
+      box-shadow: 0 18px 52px rgba(0,0,0,.19), inset 0 1px rgba(255,255,255,.025);
+    }
+
+    .panel__head {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: .9rem 1rem;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel__title { margin: 0; font-size: .93rem; letter-spacing: -.01em; }
+    .panel__hint { color: var(--muted); font: 600 .61rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .panel__body { padding: 1rem; }
+
+    .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+    .scenario {
+      min-height: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .55rem;
+      padding: .7rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--soft);
+      text-align: left;
+      background: rgba(255,255,255,.025);
+      cursor: pointer;
+      transition: 160ms ease;
+    }
+    .scenario:hover { color: #fff; border-color: rgba(61,216,245,.42); background: rgba(61,216,245,.06); }
+    .scenario[aria-pressed="true"] { color: #fff; border-color: rgba(61,216,245,.55); background: linear-gradient(135deg, rgba(61,216,245,.13), rgba(170,139,255,.08)); }
+    .scenario__icon { font-size: 1.05rem; }
+    .scenario__name { font-size: .75rem; font-weight: 700; }
+
+    .sensor-list { display: grid; gap: 1.05rem; }
+    .sensor__top { display: grid; grid-template-columns: 1fr auto; gap: .65rem; margin-bottom: .55rem; }
+    .sensor label { color: var(--soft); font-size: .75rem; font-weight: 600; }
+    .sensor output { color: #fff; font: 700 .72rem/1 var(--mono); }
+    .sensor input[type="range"] {
+      width: 100%; height: 5px; display: block; appearance: none; border-radius: 999px;
+      background: linear-gradient(90deg, var(--cyan) var(--fill, 50%), rgba(120,155,175,.18) var(--fill, 50%));
+      cursor: pointer;
+    }
+    .sensor input::-webkit-slider-thumb {
+      width: 15px; height: 15px; appearance: none; border: 3px solid #06121c; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px var(--cyan);
+    }
+
+    .stage { position: relative; min-height: 620px; }
+    .stage__top {
+      position: absolute; inset: 1rem 1rem auto; z-index: 2;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; pointer-events: none;
+    }
+    .stage-copy h2 { margin: .35rem 0 .25rem; font-size: clamp(1.25rem, 2.5vw, 2rem); letter-spacing: -.035em; }
+    .stage-copy p { max-width: 460px; margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
+
+    .risk-orb {
+      width: 110px; height: 110px; flex: 0 0 auto; display: grid; place-items: center; position: relative;
+      border-radius: 50%; border: 1px solid var(--line-strong); background: rgba(6,15,23,.76); box-shadow: 0 0 45px rgba(73,230,160,.09);
+    }
+    .risk-orb::before {
+      content: ""; position: absolute; inset: 6px; border-radius: inherit;
+      background: conic-gradient(var(--risk-color, var(--green)) calc(var(--risk, 0) * 1%), rgba(255,255,255,.06) 0);
+      mask: radial-gradient(circle, transparent 62%, #000 64%);
+    }
+    .risk-orb__number { font: 700 2rem/1 var(--mono); }
+    .risk-orb__label { margin-top: .22rem; color: var(--muted); font: 700 .56rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+
+    #fieldCanvas { width: 100%; height: 620px; display: block; }
+
+    .decision-bar {
+      position: absolute; inset: auto 1rem 1rem; z-index: 2; display: grid; grid-template-columns: repeat(3, 1fr); gap: .65rem;
+    }
+    .decision {
+      min-width: 0; padding: .8rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(5,14,22,.82); backdrop-filter: blur(12px);
+    }
+    .decision__label { color: var(--muted); font: 700 .56rem/1 var(--mono); letter-spacing: .11em; text-transform: uppercase; }
+    .decision__value { overflow: hidden; margin-top: .45rem; color: var(--soft); font-size: .75rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .decision.is-alert { border-color: rgba(255,99,125,.42); background: rgba(74,18,30,.68); }
+    .decision.is-alert .decision__value { color: #ffd9df; }
+
+    .mcu-flow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: .55rem; }
+    .mcu {
+      padding: .8rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.025);
+    }
+    .mcu__id { color: var(--cyan); font: 700 .59rem/1 var(--mono); letter-spacing: .1em; }
+    .mcu__name { margin: .4rem 0 .25rem; font-size: .8rem; font-weight: 700; }
+    .mcu__meta { color: var(--muted); font-size: .65rem; line-height: 1.45; }
+    .uart { align-self: center; color: var(--green); font: 700 .6rem/1 var(--mono); writing-mode: vertical-rl; }
+
+    .helmet {
+      min-height: 258px;
+      display: grid;
+      place-items: center;
+      position: relative;
+      border-radius: 14px;
+      background: radial-gradient(circle, rgba(61,216,245,.07), transparent 62%);
+    }
+    .helmet__shell {
+      width: 132px; height: 150px; position: relative; border: 2px solid rgba(165,189,201,.32); border-radius: 62px 62px 40px 40px;
+      background: linear-gradient(145deg, rgba(255,255,255,.05), rgba(255,255,255,.01));
+    }
+    .helmet__shell::after { content: "RIDER"; position: absolute; inset: 59px 0 auto; color: var(--muted); text-align: center; font: 700 .56rem var(--mono); letter-spacing: .13em; }
+
+    .display-cluster { display: grid; gap: .85rem; }
+    .oled-pair { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+    .display-unit { min-width: 0; }
+    .display-unit__label {
+      display: flex; justify-content: space-between; gap: .5rem; margin-bottom: .4rem;
+      color: var(--muted); font: 700 .54rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+    }
+    .display-unit__label span:last-child { color: var(--green); }
+    .oled {
+      aspect-ratio: 2 / 1;
+      min-height: 74px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+      position: relative;
+      padding: .48rem .52rem;
+      border: 5px solid #111820;
+      border-radius: 8px;
+      color: #77e8ff;
+      background: #01070b;
+      box-shadow: inset 0 0 14px rgba(61,216,245,.10), 0 5px 14px rgba(0,0,0,.3);
+      font-family: var(--mono);
+    }
+    .oled::after, .lcd-screen::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .14;
+      background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(255,255,255,.08) 3px);
+    }
+    .oled__top { display: flex; justify-content: space-between; color: #3b8fa0; font-size: .43rem; }
+    .oled__main { align-self: center; overflow: hidden; font-size: clamp(.52rem, .8vw, .7rem); font-weight: 700; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+    .oled__bottom { display: flex; justify-content: space-between; font-size: .46rem; }
+    .oled.is-alert { color: #fff; border-color: #27333d; background: #06202a; box-shadow: inset 0 0 25px rgba(61,216,245,.25), 0 0 17px rgba(61,216,245,.14); }
+    .oled.is-alert .oled__main { animation: oledBlink .65s steps(2, end) infinite; }
+    @keyframes oledBlink { 50% { opacity: .38; } }
+
+    .lcd-module {
+      padding: .65rem;
+      border: 1px solid rgba(73,230,160,.18);
+      border-radius: 10px;
+      background: linear-gradient(145deg, #183229, #10251e);
+      box-shadow: inset 0 1px rgba(255,255,255,.04);
+    }
+    .lcd-screen {
+      overflow: hidden;
+      position: relative;
+      padding: .55rem .6rem;
+      border: 4px solid #0c1712;
+      border-radius: 5px;
+      color: #13341f;
+      background: #8ed36a;
+      box-shadow: inset 0 0 18px rgba(20,65,30,.32), 0 4px 12px rgba(0,0,0,.24);
+      text-shadow: 0 0 1px rgba(10,45,20,.8);
+      font: 700 clamp(.72rem, 1vw, .9rem)/1.45 var(--mono);
+      letter-spacing: .055em;
+    }
+    .lcd__line { width: 16ch; min-height: 1.45em; white-space: pre; }
+    .motor {
+      --angle: 0deg; --power: 0;
+      width: 18px; height: 18px; display: grid; place-items: center; position: absolute; top: 50%; left: 50%;
+      border: 1px solid rgba(141,180,203,.22); border-radius: 50%; color: rgba(165,189,201,.38); background: #0b1824;
+      font: 700 .5rem/1 var(--mono); transform: translate(-50%,-50%) rotate(var(--angle)) translateY(-92px) rotate(calc(var(--angle) * -1));
+      box-shadow: 0 0 calc(var(--power) * 22px) color-mix(in srgb, var(--purple) calc(var(--power) * 100%), transparent);
+    }
+    .motor.is-on { color: #fff; border-color: var(--purple); background: color-mix(in srgb, var(--purple) calc(var(--power) * 70%), #101827); }
+
+    .relay-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+    .relay { padding: .6rem .35rem; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); text-align: center; background: rgba(255,255,255,.02); }
+    .relay__dot { width: 7px; height: 7px; margin: 0 auto .45rem; border-radius: 50%; background: #3d5360; }
+    .relay__name { font: 700 .56rem/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+    .relay.is-on { color: #dfffee; border-color: rgba(73,230,160,.35); background: rgba(73,230,160,.06); }
+    .relay.is-on .relay__dot { background: var(--green); box-shadow: 0 0 12px var(--green); }
+    .relay.is-danger { border-color: rgba(255,99,125,.45); background: rgba(255,99,125,.09); }
+    .relay.is-danger .relay__dot { background: var(--red); box-shadow: 0 0 12px var(--red); }
+
+    .telemetry-canvas { width: 100%; height: 115px; display: block; }
+
+    .event-feed { display: grid; gap: .7rem; max-height: 210px; overflow-y: auto; }
+    .event { display: grid; grid-template-columns: 7px 1fr auto; gap: .65rem; align-items: start; }
+    .event__dot { width: 7px; height: 7px; margin-top: .35rem; border-radius: 50%; background: var(--event, var(--cyan)); box-shadow: 0 0 10px color-mix(in srgb, var(--event, var(--cyan)) 60%, transparent); }
+    .event__text { color: var(--soft); font-size: .7rem; line-height: 1.45; }
+    .event__time { color: var(--muted); font: 600 .56rem/1.4 var(--mono); }
+
+    .footer-note {
+      display: flex; justify-content: space-between; gap: 1rem; margin: 1.1rem 0 .3rem; color: var(--muted); font: 600 .6rem/1.5 var(--mono); letter-spacing: .05em;
+    }
+
+    @media (max-width: 1160px) {
+      .layout { grid-template-columns: minmax(240px, .75fr) minmax(450px, 1.35fr); }
+      .stack--right { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
+      .system-strip { grid-template-columns: 1.4fr repeat(2, 1fr); }
+      .system-cell:nth-child(4), .system-cell:nth-child(5) { border-top: 1px solid var(--line); }
+    }
+
+    @media (max-width: 780px) {
+      .app { padding: .8rem; }
+      .masthead { grid-template-columns: 1fr; align-items: start; }
+      .session-controls { width: 100%; }
+      .session-controls .btn { flex: 1; }
+      .system-strip { grid-template-columns: 1fr 1fr; }
+      .system-cell { border-bottom: 1px solid var(--line); }
+      .system-cell:first-child { grid-column: 1 / -1; }
+      .layout { grid-template-columns: 1fr; }
+      .stack--right { grid-column: auto; grid-template-columns: 1fr; }
+      .stage { min-height: 590px; }
+      #fieldCanvas { height: 590px; }
+      .stage__top { flex-direction: column; }
+      .risk-orb { width: 88px; height: 88px; align-self: flex-end; }
+      .risk-orb__number { font-size: 1.55rem; }
+      .decision-bar { grid-template-columns: 1fr; }
+      .footer-note { flex-direction: column; }
+    }
+
+    @media (max-width: 440px) {
+      .scenario-grid { grid-template-columns: 1fr; }
+      .system-strip { grid-template-columns: 1fr; }
+      .system-cell:first-child { grid-column: auto; }
+      .stage-copy p { display: none; }
+      .decision__value { font-size: .68rem; }
+      .relay-grid { grid-template-columns: 1fr 1fr; }
+      .oled-pair { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-
-<nav>
-  <div class="nav-logo">TwinKey ARAS</div>
-  <div class="nav-tag">Patent · 202521120497</div>
-</nav>
-
-<div class="hero">
-  <div class="hero-badge">Advanced Rider Assistive System</div>
-  <h1>360° Intelligent<br>Motorcycle Safety</h1>
-  <p>Real-time sensor fusion, directional haptic alerts, automatic headlight dimming and pothole detection — all processed on dual ESP8266 microcontrollers at the edge.</p>
-  <div class="hero-stats">
-    <div class="stat-pill"><span class="stat-num">18</span><span class="stat-lbl">Sensors</span></div>
-    <div class="stat-pill"><span class="stat-num">17</span><span class="stat-lbl">Outputs</span></div>
-    <div class="stat-pill"><span class="stat-num">3</span><span class="stat-lbl">Algorithms</span></div>
-    <div class="stat-pill"><span class="stat-num">2</span><span class="stat-lbl">MCUs</span></div>
-    <div class="stat-pill"><span class="stat-num">2Hz</span><span class="stat-lbl">Telemetry</span></div>
-  </div>
-</div>
-
-<div class="features">
-  <div class="feat-card"><span class="feat-icon">🚨</span><div class="feat-title">Blind Spot Detection</div><div class="feat-desc">Left &amp; right mirror HC-SR04 sensors with OLED HUDs that flash faster as vehicles approach — 12.5 Hz strobe at 10 cm.</div></div>
-  <div class="feat-card"><span class="feat-icon">💡</span><div class="feat-title">Auto Headlight Dimmer</div><div class="feat-desc">Algorithm A switches to low beam when oncoming traffic is within 300 cm, restores at 320 cm to prevent flicker.</div></div>
-  <div class="feat-card"><span class="feat-icon">🎯</span><div class="feat-title">Haptic Helmet Ring</div><div class="feat-desc">10 vibration motors in a 360° spatial layout give the rider directional awareness of obstacles without looking away.</div></div>
-  <div class="feat-card"><span class="feat-icon">🕳️</span><div class="feat-title">Pothole Detection</div><div class="feat-desc">Algorithm C fuses ultrasonic + IR + IMU: detects road surface drops only when lean angle is stable, ruling out cornering.</div></div>
-  <div class="feat-card"><span class="feat-icon">📡</span><div class="feat-title">Live WiFi Dashboard</div><div class="feat-desc">ESP2 hosts an async web server at 192.168.4.1. The companion Android app streams GPS &amp; nav waypoints back in real time.</div></div>
-  <div class="feat-card"><span class="feat-icon">⚡</span><div class="feat-title">Dual-MCU Architecture</div><div class="feat-desc">Safety loops pinned to MCU1, network &amp; haptics on MCU2. Zero-latency 115200 bps UART link with STX/ETX framing.</div></div>
-</div>
-
-<!-- ═══════════════════ SIMULATOR ═══════════════════ -->
-<div class="sim-section">
-  <div class="sim-section-head">
-    <h2>Interactive Simulator</h2>
-    <p>Drag sliders or click a scenario — all three algorithms run live in your browser</p>
-  </div>
-
-  <div class="scenarios">
-    <button class="scen-btn" onclick="scenario('leftBS')">⚠ Left Blind Spot</button>
-    <button class="scen-btn" onclick="scenario('rightBS')">⚠ Right Blind Spot</button>
-    <button class="scen-btn danger" onclick="scenario('oncoming')">🚗 Oncoming Vehicle</button>
-    <button class="scen-btn danger" onclick="scenario('tailgate')">🚘 Tailgater</button>
-    <button class="scen-btn danger" onclick="scenario('pothole')">🕳 Pothole</button>
-    <button class="scen-btn danger" onclick="scenario('critical')">🔴 Critical All</button>
-    <button class="scen-btn" onclick="scenario('clear')">✓ All Clear</button>
-  </div>
-
-  <div class="sim-grid">
-
-    <!-- LEFT: SENSOR CONTROLS -->
-    <div>
-      <div class="panel">
-        <div class="panel-title">Primary sensors</div>
-        <div class="srow"><span class="slbl">Front</span><input type="range" min="0" max="400" value="250" id="s_front" oninput="set('front',this.value)"><span class="sval" id="v_front">250 cm</span></div>
-        <div class="srow"><span class="slbl">Rear</span><input type="range" min="0" max="400" value="180" id="s_rear" oninput="set('rear',this.value)"><span class="sval" id="v_rear">180 cm</span></div>
-        <div class="srow"><span class="slbl">Left side</span><input type="range" min="0" max="200" value="120" id="s_left" oninput="set('left',this.value)"><span class="sval" id="v_left">120 cm</span></div>
-        <div class="srow"><span class="slbl">Right side</span><input type="range" min="0" max="200" value="90" id="s_right" oninput="set('right',this.value)"><span class="sval" id="v_right">90 cm</span></div>
-
-        <div class="divider"></div>
-        <div class="panel-title" style="color:var(--warn)">Blind spot sensors</div>
-        <div class="srow highlight"><span class="slbl">L. Mirror</span><input type="range" min="0" max="400" value="300" id="s_lm" oninput="set('lm',this.value)"><span class="sval" id="v_lm">300 cm</span></div>
-        <div class="srow highlight"><span class="slbl">R. Mirror</span><input type="range" min="0" max="400" value="60" id="s_rm" oninput="set('rm',this.value)"><span class="sval" id="v_rm">60 cm</span></div>
-
-        <div class="divider"></div>
-        <div class="panel-title">Pothole sensors</div>
-        <div class="srow"><span class="slbl">Pothole US</span><input type="range" min="0" max="60" value="20" id="s_pot" oninput="set('pot',this.value)"><span class="sval" id="v_pot">20 cm</span></div>
-        <div class="srow"><span class="slbl">Pothole IR</span><input type="range" min="3000" max="9000" value="4800" id="s_ir" oninput="set('ir',this.value)"><span class="sval" id="v_ir">4800</span></div>
-
-        <div class="divider"></div>
-        <div class="panel-title">Bike state</div>
-        <div class="srow"><span class="slbl">Lean angle</span><input type="range" min="-45" max="45" value="0" id="s_lean" oninput="set('lean',this.value)"><span class="sval" id="v_lean">0°</span></div>
-        <div class="srow"><span class="slbl">Speed</span><input type="range" min="0" max="130" value="45" id="s_spd" oninput="set('spd',this.value)"><span class="sval" id="v_spd">45 km/h</span></div>
-        <div class="srow"><span class="slbl">Bike LDR</span><input type="range" min="0" max="26000" value="15000" id="s_ldr" oninput="set('ldr',this.value)"><span class="sval" id="v_ldr">15000</span></div>
+  <main class="app" id="main-content">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Interactive dual-MCU test bench</p>
+        <h1>Safety decisions, <span>made visible.</span></h1>
       </div>
-    </div>
-
-    <!-- CENTER: VISUALIZATION -->
-    <div>
-      <!-- Bike top view canvas -->
-      <div class="canvas-wrap">
-        <canvas id="cvBike" height="260"></canvas>
+      <div class="session-controls" aria-label="Simulation controls">
+        <button class="btn is-active" id="runToggle" type="button" aria-pressed="true"><span class="live-dot" aria-hidden="true"></span><span>Live</span></button>
+        <button class="btn" id="resetButton" type="button">Reset</button>
+        <button class="btn btn--danger" id="brakeButton" type="button">Emergency brake</button>
       </div>
+    </header>
 
-      <!-- Haptic helmet ring -->
-      <div class="canvas-wrap">
-        <canvas id="cvHelmet" height="180"></canvas>
+    <section class="system-strip" aria-label="Live system status">
+      <div class="system-cell system-state">
+        <div class="system-state__icon" aria-hidden="true">✓</div>
+        <div><div class="system-cell__label">System state</div><div class="system-cell__value" id="systemState">Nominal</div><div class="system-cell__sub" id="systemSub">Safety loop is deterministic</div></div>
       </div>
+      <div class="system-cell"><div class="system-cell__label">MCU1 loop</div><div class="system-cell__value"><span id="loopLatency">22</span> ms</div><div class="system-cell__sub">Safety / actuation</div></div>
+      <div class="system-cell"><div class="system-cell__label">MCU2 uplink</div><div class="system-cell__value"><span id="uplink">99.8</span>%</div><div class="system-cell__sub">Telemetry health</div></div>
+      <div class="system-cell"><div class="system-cell__label">Speed</div><div class="system-cell__value"><span id="speedReadout">45</span> km/h</div><div class="system-cell__sub">Dynamic envelope</div></div>
+      <div class="system-cell"><div class="system-cell__label">Packets</div><div class="system-cell__value" id="packetCount">12,480</div><div class="system-cell__sub">Zero dropped</div></div>
+    </section>
 
-      <!-- OLED displays -->
-      <div class="oled-row">
-        <div>
-          <div class="oled-label">Left OLED — blind spot HUD</div>
-          <div class="oled-wrap"><canvas id="cvOledL" width="128" height="64"></canvas></div>
-          <div class="flash-info" id="flashInfoL">Idle · nav mode</div>
-        </div>
-        <div>
-          <div class="oled-label">Right OLED — blind spot HUD</div>
-          <div class="oled-wrap"><canvas id="cvOledR" width="128" height="64"></canvas></div>
-          <div class="flash-info" id="flashInfoR">Idle · nav mode</div>
-        </div>
-      </div>
+    <div class="layout">
+      <aside class="stack" aria-label="Simulation inputs">
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Road scenarios</h2><span class="panel__hint">One-tap presets</span></div>
+          <div class="panel__body scenario-grid" id="scenarioGrid"></div>
+        </section>
 
-      <!-- LCD display -->
-      <div class="lcd-wrap">
-        <div class="lcd" id="lcd">SPD:---km  LN:  0.0°
-F:250 R:180 L:120 S: 90
-DAY  OK   BM:HI  P: 20
-LINK:OK  PKT:00000000  </div>
-      </div>
-    </div>
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Sensor field</h2><span class="panel__hint">Manual input</span></div>
+          <div class="panel__body sensor-list" id="sensorList"></div>
+        </section>
 
-    <!-- RIGHT: STATUS -->
-    <div>
-      <!-- Risk gauge -->
-      <div class="panel">
-        <div class="panel-title">Risk score</div>
-        <div class="risk-wrap">
-          <svg class="risk-svg" id="riskSvg" width="140" height="80" viewBox="0 0 140 80">
-            <path d="M15 75 A55 55 0 0 1 125 75" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="10" stroke-linecap="round"/>
-            <path d="M15 75 A55 55 0 0 1 125 75" fill="none" stroke="url(#rg)" stroke-width="10" stroke-linecap="round" id="riskArc" stroke-dasharray="0 173"/>
-            <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#00ee88"/><stop offset="50%" stop-color="#ffaa00"/><stop offset="100%" stop-color="#ff4455"/></linearGradient></defs>
-            <text x="70" y="68" text-anchor="middle" fill="#ddf0ff" font-size="22" font-weight="800" font-family="monospace" id="riskNum">0</text>
-          </svg>
-          <div class="risk-label" id="riskLbl">All clear</div>
-        </div>
-        <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden">
-          <div id="riskBar" style="height:100%;width:0%;background:var(--ok);border-radius:3px;transition:width .4s,background .4s"></div>
-        </div>
-        <div style="font-size:.75rem;color:var(--text3);margin-top:8px;line-height:1.6" id="riskFactors">—</div>
-      </div>
-
-      <!-- Algorithm states -->
-      <div class="panel">
-        <div class="panel-title">Algorithm states</div>
-        <div class="algo-card" id="cardA">
-          <div class="algo-name">A · Headlight auto-dimmer</div>
-          <div class="algo-status" id="algoA" style="color:var(--ok)">High beam active</div>
-        </div>
-        <div class="algo-card" id="cardB">
-          <div class="algo-name">B · Haptic helmet engine</div>
-          <div class="algo-status" id="algoB" style="color:var(--text3)">All 10 motors idle</div>
-        </div>
-        <div class="algo-card" id="cardC">
-          <div class="algo-name">C · Pothole fusion</div>
-          <div class="algo-status" id="algoC" style="color:var(--text3)">Monitoring · road clear</div>
-        </div>
-      </div>
-
-      <!-- Relays -->
-      <div class="panel">
-        <div class="panel-title">Relay outputs — MCU1</div>
-        <div class="relay-grid">
-          <div class="relay-item"><div class="relay-dot" id="r0"></div><div class="relay-name">Brake</div></div>
-          <div class="relay-item"><div class="relay-dot" id="r1"></div><div class="relay-name">L. Ind</div></div>
-          <div class="relay-item"><div class="relay-dot" id="r2"></div><div class="relay-name">R. Ind</div></div>
-          <div class="relay-item"><div class="relay-dot on" id="r3"></div><div class="relay-name">Beam</div></div>
-          <div class="relay-item"><div class="relay-dot on" id="r4"></div><div class="relay-name">Main</div></div>
-        </div>
-        <div style="font-size:.7rem;color:var(--text3)">L.Ind &amp; R.Ind fire on blind spot detection</div>
-      </div>
-
-      <!-- Blind spot status -->
-      <div class="panel">
-        <div class="panel-title">Blind spot status</div>
-        <div class="bs-grid">
-          <div class="bs-cell" id="bsL">
-            <div class="bs-side">LEFT MIRROR</div>
-            <div class="bs-dist" id="bsLdist" style="color:var(--ok)">300 cm</div>
-            <div class="bs-info" id="bsLinfo">OLED: idle<br>Motor 8: 0%<br>Relay: off</div>
-            <div class="bs-bar"><div class="bs-fill" id="bsLbar" style="width:0%;background:var(--ok)"></div></div>
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Isolation layer</h2><span class="panel__hint">UART only</span></div>
+          <div class="panel__body mcu-flow">
+            <div class="mcu"><div class="mcu__id">MCU 01</div><div class="mcu__name">Safety engine</div><div class="mcu__meta">Sensors · fusion · relays</div></div>
+            <div class="uart">→ UART</div>
+            <div class="mcu"><div class="mcu__id">MCU 02</div><div class="mcu__name">Network node</div><div class="mcu__meta">Display · logs · uplink</div></div>
           </div>
-          <div class="bs-cell" id="bsR">
-            <div class="bs-side">RIGHT MIRROR</div>
-            <div class="bs-dist" id="bsRdist" style="color:var(--ok)">60 cm</div>
-            <div class="bs-info" id="bsRinfo">OLED: idle<br>Motor 9: 0%<br>Relay: off</div>
-            <div class="bs-bar"><div class="bs-fill" id="bsRbar" style="width:0%;background:var(--ok)"></div></div>
-          </div>
-        </div>
-      </div>
+        </section>
+      </aside>
 
-      <!-- JSON telemetry -->
-      <div class="panel">
-        <div class="panel-title">Live telemetry packet · 2 Hz</div>
-        <div class="json-box" id="jsonBox">{}</div>
-      </div>
+      <section class="panel stage" aria-labelledby="stageTitle">
+        <div class="stage__top">
+          <div class="stage-copy"><p class="eyebrow">360° proximity fusion</p><h2 id="stageTitle">Vehicle safety field</h2><p>Distance, lean and speed combine into one adaptive intervention envelope.</p></div>
+          <div class="risk-orb" id="riskOrb" aria-live="polite"><div><div class="risk-orb__number" id="riskValue">08</div><div class="risk-orb__label" id="riskLabel">Low risk</div></div></div>
+        </div>
+        <canvas id="fieldCanvas" role="img" aria-label="Top-down motorcycle proximity and hazard visualization"></canvas>
+        <div class="decision-bar" aria-live="polite">
+          <div class="decision" id="brakeDecision"><div class="decision__label">Braking</div><div class="decision__value" id="brakeDecisionText">Standby · envelope clear</div></div>
+          <div class="decision" id="beamDecision"><div class="decision__label">Headlight</div><div class="decision__value" id="beamDecisionText">High beam available</div></div>
+          <div class="decision" id="hapticDecision"><div class="decision__label">Haptics</div><div class="decision__value" id="hapticDecisionText">All motors idle</div></div>
+        </div>
+      </section>
+
+      <aside class="stack stack--right" aria-label="System outputs">
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Rider displays</h2><span class="panel__hint">I²C + parallel</span></div>
+          <div class="panel__body display-cluster">
+            <div class="oled-pair">
+              <div class="display-unit">
+                <div class="display-unit__label"><span>OLED-L · 0.96 in</span><span>128×64</span></div>
+                <div class="oled" id="oledLeft" role="img" aria-label="Left 0.96 inch OLED display">
+                  <div class="oled__top"><span>ARAS / LEFT</span><span id="oledLeftMode">READY</span></div>
+                  <div class="oled__main" id="oledLeftMain">NAVIGATION</div>
+                  <div class="oled__bottom"><span id="oledLeftDistance">140 CM</span><span id="oledLeftMotor">M8 IDLE</span></div>
+                </div>
+              </div>
+              <div class="display-unit">
+                <div class="display-unit__label"><span>OLED-R · 0.96 in</span><span>128×64</span></div>
+                <div class="oled" id="oledRight" role="img" aria-label="Right 0.96 inch OLED display">
+                  <div class="oled__top"><span>ARAS / RIGHT</span><span id="oledRightMode">READY</span></div>
+                  <div class="oled__main" id="oledRightMain">NAVIGATION</div>
+                  <div class="oled__bottom"><span id="oledRightDistance">140 CM</span><span id="oledRightMotor">M3 IDLE</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="display-unit">
+              <div class="display-unit__label"><span>Dashboard LCD</span><span>16×2</span></div>
+              <div class="lcd-module">
+                <div class="lcd-screen" role="img" aria-label="16 by 2 dashboard character LCD" aria-live="polite">
+                  <div class="lcd__line" id="lcdLine1">SPD:045 LN:+00  </div>
+                  <div class="lcd__line" id="lcdLine2">RISK:000 NOMINAL</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Helmet haptics</h2><span class="panel__hint" id="hapticMode">Idle</span></div>
+          <div class="panel__body helmet"><div class="helmet__shell" aria-label="Ten directional helmet motors" id="helmet"></div></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Hardware relays</h2><span class="panel__hint">Physical state</span></div>
+          <div class="panel__body relay-grid" id="relayGrid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Risk timeline</h2><span class="panel__hint">Last 24 cycles</span></div>
+          <canvas class="telemetry-canvas" id="telemetryCanvas" role="img" aria-label="Recent risk score timeline"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Event stream</h2><span class="panel__hint">MCU2 log</span></div>
+          <div class="panel__body event-feed" id="eventFeed" aria-live="polite"></div>
+        </section>
+      </aside>
     </div>
 
-  </div><!-- /sim-grid -->
-</div><!-- /sim-section -->
+    <div class="footer-note"><span>SIMULATION MODEL · FOR ENGINEERING DEMONSTRATION</span><span>TWINKEY ARAS · PATENT APPLICATION 202521120497</span></div>
+  </main>
 
-<footer>
-  <strong>TwinKey ARAS</strong> &nbsp;·&nbsp; Indian Provisional Patent No. <strong>202521120497</strong><br>
-  <span style="margin-top:6px;display:block">Dual ESP8266 · 18 sensors · 17 outputs · 3 algorithms · WiFi telemetry</span>
-</footer>
+  <script>
+    (() => {
+      'use strict';
 
-<script>
-// ═══════════════════════════════════════════════════
-//  SENSOR STATE
-// ═══════════════════════════════════════════════════
-const S={front:250,rear:180,left:120,right:90,lm:300,rm:60,pot:20,ir:4800,lean:0,spd:45,ldr:15000};
-const AS={highBeam:true,prevIR:4800,prevUS:20,pot:false,potAt:0,pkt:0};
+      const defaults = { front: 250, rear: 180, left: 140, right: 140, lean: 0, speed: 45, pothole: 18, ambient: 15000, oncoming: false, manualBrake: false };
+      const state = { ...defaults };
+      let running = true;
+      let activeScenario = 'cruise';
+      let packetCount = 12480;
+      let lastRiskBand = 'low';
+      let riskHistory = Array(24).fill(8);
 
-// Independent OLED state per side (bug-fixed)
-const OLED={L:{phase:false,last:0,active:false},R:{phase:false,last:0,active:false}};
-let idleDrawL=0,idleDrawR=0;
+      const sensors = [
+        { key: 'front', label: 'Front distance', min: 10, max: 400, unit: 'cm' },
+        { key: 'rear', label: 'Rear distance', min: 10, max: 400, unit: 'cm' },
+        { key: 'left', label: 'Left blind spot', min: 10, max: 220, unit: 'cm' },
+        { key: 'right', label: 'Right blind spot', min: 10, max: 220, unit: 'cm' },
+        { key: 'pothole', label: 'Road-depth delta', min: 0, max: 60, unit: 'cm' },
+        { key: 'lean', label: 'Motorcycle lean', min: -45, max: 45, unit: '°' },
+        { key: 'speed', label: 'Vehicle speed', min: 0, max: 130, unit: 'km/h' },
+        { key: 'ambient', label: 'Ambient light', min: 0, max: 26000, unit: 'lx' }
+      ];
 
-// ── Sensor setters ──────────────────────────────────
-const UNITS={front:' cm',rear:' cm',left:' cm',right:' cm',lm:' cm',rm:' cm',pot:' cm',ir:'',lean:'°',spd:' km/h',ldr:''};
-function set(k,v){
-  S[k]=parseFloat(v);
-  const el=document.getElementById('v_'+k);
-  if(el)el.textContent=parseFloat(v).toFixed(0)+(UNITS[k]||'');
-  const va=document.getElementById('v_'+k);
-  if(va){va.classList.toggle('alert',needsAlert(k,parseFloat(v)));}
-}
-function setSl(k,v){
-  S[k]=parseFloat(v);
-  const s=document.getElementById('s_'+k),e=document.getElementById('v_'+k);
-  if(s)s.value=v;
-  if(e)e.textContent=parseFloat(v).toFixed(0)+(UNITS[k]||'');
-}
-function needsAlert(k,v){
-  if(k==='front')return v>0&&v<80;
-  if(k==='rear')return v>0&&v<40;
-  if(k==='left'||k==='right')return v>0&&v<50;
-  if(k==='lm'||k==='rm')return v>0&&v<100;
-  return false;
-}
+      const scenarios = [
+        { id: 'cruise', icon: '◎', name: 'Clear road', values: { ...defaults } },
+        { id: 'left', icon: '←', name: 'Left blind spot', values: { left: 42, speed: 58 } },
+        { id: 'right', icon: '→', name: 'Right blind spot', values: { right: 38, speed: 62 } },
+        { id: 'oncoming', icon: '◇', name: 'Oncoming vehicle', values: { front: 95, ambient: 4200, oncoming: true, speed: 70 } },
+        { id: 'pothole', icon: '⌄', name: 'Deep pothole', values: { front: 165, pothole: 48, speed: 54 } },
+        { id: 'critical', icon: '!', name: 'Critical conflict', values: { front: 34, rear: 48, left: 36, right: 44, pothole: 50, speed: 82, oncoming: true } }
+      ];
 
-// ── Scenarios ───────────────────────────────────────
-function scenario(s){
-  const c={front:250,rear:180,left:120,right:90,lm:300,rm:300,pot:20,ir:4800,lean:0,spd:45,ldr:15000};
-  if(s==='leftBS')  Object.assign(c,{lm:42,left:55});
-  if(s==='rightBS') Object.assign(c,{rm:38,right:48});
-  if(s==='oncoming')Object.assign(c,{front:65});
-  if(s==='tailgate')Object.assign(c,{rear:22});
-  if(s==='pothole') {
-    Object.assign(c,{pot:38,ir:7200,lean:2});
-    setTimeout(()=>{setSl('pot',20);setSl('ir',4800);},900);
-  }
-  if(s==='critical')Object.assign(c,{front:28,rear:18,lm:40,rm:35,left:30,right:28,spd:90});
-  if(s==='clear'){}
-  Object.keys(c).forEach(k=>setSl(k,c[k]));
-}
+      const $ = selector => document.querySelector(selector);
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
-// ═══════════════════════════════════════════════════
-//  ALGORITHMS (all bug-fixed)
-// ═══════════════════════════════════════════════════
-function algoA(){
-  const f=S.front;
-  if(AS.highBeam){if(f>0.5&&f<300)AS.highBeam=false;}
-  else{if(f<0.5||f>=320)AS.highBeam=true;}
-}
+      function buildUI() {
+        $('#scenarioGrid').innerHTML = scenarios.map(s => `<button class="scenario" type="button" data-scenario="${s.id}" aria-pressed="${s.id === activeScenario}"><span class="scenario__icon" aria-hidden="true">${s.icon}</span><span class="scenario__name">${s.name}</span></button>`).join('');
+        $('#sensorList').innerHTML = sensors.map(s => `<div class="sensor"><div class="sensor__top"><label for="sensor-${s.key}">${s.label}</label><output id="output-${s.key}" for="sensor-${s.key}">${state[s.key]} ${s.unit}</output></div><input id="sensor-${s.key}" data-sensor="${s.key}" type="range" min="${s.min}" max="${s.max}" value="${state[s.key]}" aria-label="${s.label}"></div>`).join('');
+        $('#helmet').innerHTML = Array.from({ length: 10 }, (_, i) => `<span class="motor" data-motor="${i}" style="--angle:${i * 36}deg">${i + 1}</span>`).join('');
+        $('#relayGrid').innerHTML = ['Brake', 'L. indicator', 'R. indicator', 'Low beam'].map((name, i) => `<div class="relay" data-relay="${i}"><div class="relay__dot"></div><div class="relay__name">${name}</div></div>`).join('');
 
-// Standard motor PWM: onset 50cm
-function pwm(d){
-  if(!d||d<0.5||d>=50)return 0;
-  const r=1-Math.min(1,Math.max(0,(d-10)/40));return r*r;
-}
-// Blind spot motor PWM: 100cm onset, two-zone ramp
-function pwmBS(d){
-  if(!d||d<0.5||d>=100)return 0;
-  if(d>=50){const r=1-(d-50)/50;return r*0.25;}
-  const r=1-Math.min(1,Math.max(0,(d-10)/40));
-  return 0.25+(r*r)*0.75;
-}
-function algoB(){
-  return[pwm(S.front),Math.max(pwm(S.front),pwm(S.left)),pwm(S.left),
-         Math.max(pwm(S.rear),pwmBS(S.lm)),pwm(S.rear),Math.max(pwm(S.rear),pwmBS(S.rm)),
-         pwm(S.right),Math.max(pwm(S.front),pwm(S.right)),pwmBS(S.lm),pwmBS(S.rm)];
-}
-function algoC(){
-  const now=Date.now();
-  const ud=S.pot-AS.prevUS,id=S.ir-AS.prevIR,ok=Math.abs(S.lean)<15;
-  if(ud>8&&id>800&&ok){AS.pot=true;AS.potAt=now;}
-  else if(AS.pot&&now-AS.potAt>500)AS.pot=false;
-  AS.prevIR=S.ir;AS.prevUS=S.pot;
-}
+        document.querySelectorAll('[data-scenario]').forEach(button => button.addEventListener('click', () => applyScenario(button.dataset.scenario)));
+        document.querySelectorAll('[data-sensor]').forEach(input => input.addEventListener('input', () => {
+          const key = input.dataset.sensor;
+          state[key] = Number(input.value);
+          if (key !== 'ambient') state.oncoming = false;
+          activeScenario = 'custom';
+          syncControls();
+          update(true);
+        }));
+        $('#runToggle').addEventListener('click', toggleRunning);
+        $('#resetButton').addEventListener('click', () => applyScenario('cruise'));
+        $('#brakeButton').addEventListener('click', () => {
+          state.manualBrake = !state.manualBrake;
+          $('#brakeButton').textContent = state.manualBrake ? 'Release brake' : 'Emergency brake';
+          logEvent(state.manualBrake ? 'Manual emergency braking engaged' : 'Manual emergency braking released', state.manualBrake ? 'red' : 'green');
+          update(true);
+        });
+        window.addEventListener('resize', () => update(false), { passive: true });
+      }
 
-// Blind spot relay: fires when mirror dist < 100cm and > 0
-function bsActive(d){return d>0.5&&d<100;}
+      function applyScenario(id) {
+        const scenario = scenarios.find(item => item.id === id);
+        if (!scenario) return;
+        Object.assign(state, defaults, scenario.values, { manualBrake: false });
+        activeScenario = id;
+        $('#brakeButton').textContent = 'Emergency brake';
+        syncControls();
+        logEvent(`Scenario loaded: ${scenario.name}`, id === 'critical' ? 'red' : 'cyan');
+        update(true);
+      }
 
-function computeRisk(){
-  let s=0;
-  if(S.front>0&&S.front<300)s+=40*(1-S.front/300);
-  if(S.rear>0&&S.rear<200) s+=15*(1-S.rear/200);
-  if(S.left>0&&S.left<80)  s+=7.5*(1-S.left/80);
-  if(S.right>0&&S.right<80)s+=7.5*(1-S.right/80);
-  if(S.lm>0&&S.lm<100)     s+=8*(1-S.lm/100);
-  if(S.rm>0&&S.rm<100)     s+=8*(1-S.rm/100);
-  if(AS.pot)s+=12;
-  const l=Math.abs(S.lean);if(l>30)s+=Math.min(8,(l-30)*.4);
-  if(S.spd>60)s+=Math.min(5,(S.spd-60)*.1);
-  return Math.min(100,Math.max(0,Math.round(s)));
-}
+      function syncControls() {
+        document.querySelectorAll('[data-scenario]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.scenario === activeScenario)));
+        sensors.forEach(sensor => {
+          const input = $(`#sensor-${sensor.key}`);
+          const output = $(`#output-${sensor.key}`);
+          input.value = state[sensor.key];
+          input.style.setProperty('--fill', `${((state[sensor.key] - sensor.min) / (sensor.max - sensor.min)) * 100}%`);
+          output.textContent = `${state[sensor.key]} ${sensor.unit}`;
+        });
+      }
 
-// ═══════════════════════════════════════════════════
-//  BIKE TOP VIEW CANVAS
-// ═══════════════════════════════════════════════════
-function distColor(d,alpha){
-  let r,g,b;
-  if(d<30){r=255;g=40;b=40;}
-  else if(d<60){r=255;g=130;b=0;}
-  else if(d<120){r=255;g=210;b=0;}
-  else{r=0;g=200;b=255;}
-  return`rgba(${r},${g},${b},${alpha})`;
-}
-function drawArc(ctx,x,y,dist,dir,halfSpan,scale,maxPx){
-  if(dist<=0||dist>420)return;
-  const R=Math.min(dist*scale,maxPx);
-  const a1=dir-halfSpan,a2=dir+halfSpan;
-  const grd=ctx.createRadialGradient(x,y,0,x,y,R);
-  grd.addColorStop(0,distColor(dist,dist<60?.55:.35));
-  grd.addColorStop(1,distColor(dist,0));
-  ctx.beginPath();ctx.moveTo(x,y);ctx.arc(x,y,R,a1,a2);ctx.closePath();
-  ctx.fillStyle=grd;ctx.fill();
-  // distance label
-  const midA=dir,lx=x+Math.cos(midA)*R*.62,ly=y+Math.sin(midA)*R*.62;
-  ctx.fillStyle=distColor(dist,0.9);ctx.font='bold 9px monospace';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(dist.toFixed(0)+'cm',lx,ly);
-}
+      function toggleRunning() {
+        running = !running;
+        const button = $('#runToggle');
+        button.classList.toggle('is-active', running);
+        button.setAttribute('aria-pressed', String(running));
+        button.querySelector('span:last-child').textContent = running ? 'Live' : 'Paused';
+        logEvent(running ? 'Simulation resumed' : 'Simulation paused', running ? 'green' : 'amber');
+      }
 
-function rr(ctx,x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
-  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
-}
+      function calculate() {
+        const leanSuppression = Math.abs(state.lean) > 32 ? .42 : 1;
+        const criticalDistance = 72 + state.speed * 1.72;
+        const frontThreat = clamp((criticalDistance - state.front) / criticalDistance, 0, 1);
+        const rearThreat = clamp((105 - state.rear) / 105, 0, 1);
+        const leftThreat = clamp((100 - state.left) / 100, 0, 1) * leanSuppression;
+        const rightThreat = clamp((100 - state.right) / 100, 0, 1) * leanSuppression;
+        const roadThreat = clamp((state.pothole - 24) / 30, 0, 1) * clamp(state.speed / 35, .35, 1);
+        const risk = Math.round(clamp(frontThreat * 68 + rearThreat * 18 + Math.max(leftThreat, rightThreat) * 30 + roadThreat * 38 + (state.manualBrake ? 15 : 0), 0, 100));
+        const brake = state.manualBrake || (frontThreat > .72 && Math.abs(state.lean) < 34);
+        const lowBeam = state.oncoming || state.ambient < 6500;
+        const band = risk >= 70 ? 'critical' : risk >= 38 ? 'elevated' : 'low';
+        return { criticalDistance, frontThreat, rearThreat, leftThreat, rightThreat, roadThreat, risk, brake, lowBeam, band };
+      }
 
-function drawBike(){
-  const cv=document.getElementById('cvBike');
-  const W=cv.offsetWidth||600,H=260;
-  cv.width=W;cv.height=H;
-  const ctx=cv.getContext('2d');
-  const cx=W/2,cy=H/2,SC=0.48;
+      function update(pushHistory) {
+        const result = calculate();
+        updateStatus(result);
+        updateDecisions(result);
+        updateDisplays(result);
+        updateHaptics(result);
+        updateRelays(result);
+        drawField(result);
+        if (pushHistory) {
+          riskHistory.push(result.risk);
+          riskHistory = riskHistory.slice(-24);
+          drawTelemetry();
+        }
+        if (result.band !== lastRiskBand) {
+          logEvent(result.band === 'critical' ? 'Critical risk threshold crossed' : result.band === 'elevated' ? 'Adaptive warning envelope entered' : 'Safety envelope clear', result.band === 'critical' ? 'red' : result.band === 'elevated' ? 'amber' : 'green');
+          lastRiskBand = result.band;
+        }
+      }
 
-  // Road bg
-  ctx.fillStyle='#0d1520';ctx.fillRect(0,0,W,H);
-  // Lane markings
-  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.setLineDash([20,16]);ctx.lineWidth=1.5;
-  for(let x=50;x<W;x+=100){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-  ctx.setLineDash([]);
+      function updateStatus(r) {
+        const color = r.band === 'critical' ? 'var(--red)' : r.band === 'elevated' ? 'var(--amber)' : 'var(--green)';
+        $('#riskOrb').style.setProperty('--risk', r.risk);
+        $('#riskOrb').style.setProperty('--risk-color', color);
+        $('#riskValue').textContent = String(r.risk).padStart(2, '0');
+        $('#riskLabel').textContent = r.band === 'critical' ? 'High risk' : r.band === 'elevated' ? 'Elevated' : 'Low risk';
+        $('#systemState').textContent = r.band === 'critical' ? 'Intervening' : r.band === 'elevated' ? 'Guarded' : 'Nominal';
+        $('#systemState').style.color = color;
+        $('#systemSub').textContent = r.brake ? 'Brake relay asserted' : r.band === 'elevated' ? 'Warning channels active' : 'Safety loop is deterministic';
+        $('#speedReadout').textContent = state.speed;
+      }
 
-  // Sensor arcs (behind bike)
-  const P=Math.PI;
-  drawArc(ctx,cx,cy-24,S.front,-P/2,P/3,SC,W*.46);  // Front
-  drawArc(ctx,cx,cy+24,S.rear,  P/2, P/3,SC,H*.46); // Rear
-  drawArc(ctx,cx-16,cy,S.left,   P,   P/4,SC,W*.35); // Left
-  drawArc(ctx,cx+16,cy,S.right,  0,   P/4,SC,W*.35); // Right
-  drawArc(ctx,cx-18,cy-22,S.lm,-3*P/4,P/5,SC,W*.42); // L.Mirror
-  drawArc(ctx,cx+18,cy-22,S.rm,-P/4,  P/5,SC,W*.42); // R.Mirror
+      function updateDecisions(r) {
+        setDecision('#brakeDecision', '#brakeDecisionText', r.brake, r.brake ? `ENGAGED · ${Math.round(r.criticalDistance)} cm envelope` : `Standby · ${Math.round(r.criticalDistance)} cm envelope`);
+        setDecision('#beamDecision', '#beamDecisionText', r.lowBeam, r.lowBeam ? 'Low beam · glare suppression' : 'High beam available');
+        const hapticActive = Math.max(r.leftThreat, r.rightThreat, r.roadThreat) > .18;
+        const direction = r.roadThreat > Math.max(r.leftThreat, r.rightThreat) ? 'Road impact ahead' : r.leftThreat > r.rightThreat ? 'Left-side warning' : 'Right-side warning';
+        setDecision('#hapticDecision', '#hapticDecisionText', hapticActive, hapticActive ? direction : 'All motors idle');
+      }
 
-  // ── Bike silhouette ──
-  // Rear tyre
-  ctx.fillStyle='#0a1228';ctx.strokeStyle='rgba(100,160,255,.5)';ctx.lineWidth=1.5;
-  rr(ctx,cx-10,cy+42,20,14,3);ctx.fill();ctx.stroke();
-  // Body/frame
-  const bodyGrad=ctx.createLinearGradient(cx-16,cy-38,cx+16,cy+38);
-  bodyGrad.addColorStop(0,'#1a3a70');bodyGrad.addColorStop(1,'#0f2050');
-  rr(ctx,cx-16,cy-38,32,76,6);ctx.fillStyle=bodyGrad;ctx.fill();
-  ctx.strokeStyle='rgba(60,140,255,.35)';ctx.lineWidth=1;ctx.stroke();
-  // Tank
-  rr(ctx,cx-13,cy-10,26,24,5);
-  ctx.fillStyle='#223a7a';ctx.fill();
-  // Headstock/front
-  ctx.fillStyle='rgba(0,200,255,.12)';
-  rr(ctx,cx-12,cy-40,24,12,4);ctx.fill();
-  // Handlebars
-  ctx.fillStyle='#2a4a90';ctx.strokeStyle='rgba(80,160,255,.4)';ctx.lineWidth=1;
-  ctx.fillRect(cx-28,cy-44,56,4);ctx.strokeRect(cx-28,cy-44,56,4);
-  // Mirrors
-  ctx.fillStyle='#3a5a9f';
-  rr(ctx,cx-36,cy-46,10,5,2);ctx.fill();
-  rr(ctx,cx+26,cy-46,10,5,2);ctx.fill();
-  // Front tyre
-  ctx.fillStyle='#0a1228';ctx.strokeStyle='rgba(100,160,255,.5)';ctx.lineWidth=1.5;
-  rr(ctx,cx-10,cy-56,20,14,3);ctx.fill();ctx.stroke();
+      function updateDisplays(r) {
+        updateOled('Left', state.left, r.leftThreat, 'M8');
+        updateOled('Right', state.right, r.rightThreat, 'M3');
 
-  // Pothole indicator (downward arrow from center)
-  if(S.pot<30){
-    ctx.fillStyle=distColor(S.pot,.8);
-    ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('↓',cx,cy+8);
-    ctx.font='7px monospace';ctx.fillText('POT',cx,cy+18);
-  }
+        const speed = String(Math.round(state.speed)).padStart(3, '0');
+        const leanSign = state.lean >= 0 ? '+' : '-';
+        const lean = String(Math.abs(Math.round(state.lean))).padStart(2, '0');
+        const stateText = r.brake ? 'BRAKE' : r.band === 'critical' ? 'DANGER' : r.band === 'elevated' ? 'WARN' : 'NOMINAL';
+        $('#lcdLine1').textContent = fitLcd(`SPD:${speed} LN:${leanSign}${lean}`);
+        $('#lcdLine2').textContent = fitLcd(`RISK:${String(r.risk).padStart(3, '0')} ${stateText}`);
+      }
 
-  // Legend
-  ctx.font='9px monospace';ctx.textAlign='left';ctx.textBaseline='top';
-  [['<30cm',255,40,40],['<60cm',255,130,0],['<120cm',255,210,0],['>120cm',0,200,255]].forEach(([l,r,g,b],i)=>{
-    ctx.fillStyle=`rgba(${r},${g},${b},0.8)`;ctx.fillRect(8,8+i*14,8,8);
-    ctx.fillStyle='rgba(200,220,255,.5)';ctx.fillText(l,20,8+i*14);
-  });
-}
+      function updateOled(side, distance, threat, motor) {
+        const alert = threat > .18;
+        const id = side === 'Left' ? 'Left' : 'Right';
+        const display = $(`#oled${id}`);
+        display.classList.toggle('is-alert', alert);
+        $(`#oled${id}Mode`).textContent = alert ? 'ALERT' : 'READY';
+        $(`#oled${id}Main`).textContent = alert ? `${side.toUpperCase()} BLIND SPOT` : 'NAVIGATION';
+        $(`#oled${id}Distance`).textContent = `${Math.round(distance)} CM`;
+        $(`#oled${id}Motor`).textContent = alert ? `${motor} ${Math.round(threat * 100)}%` : `${motor} IDLE`;
+      }
 
-// ═══════════════════════════════════════════════════
-//  HAPTIC HELMET RING CANVAS
-// ═══════════════════════════════════════════════════
-const MN=['Front','F-L','Left','R-L','Rear','R-R','Right','F-R','L.Mir','R.Mir'];
-const MA=[-Math.PI/2,-3*Math.PI/4,Math.PI,3*Math.PI/4,Math.PI/2,Math.PI/4,0,-Math.PI/4,Math.PI,0];
-const MRad=[68,68,68,68,68,68,68,68,100,100];
+      function fitLcd(text) {
+        return text.slice(0, 16).padEnd(16, ' ');
+      }
 
-function mColor(p){
-  if(p<=0)return null;
-  if(p<0.3)return[0,220,136];
-  if(p<0.65)return[255,170,0];
-  return[255,68,85];
-}
+      function setDecision(card, text, alert, value) {
+        $(card).classList.toggle('is-alert', alert);
+        $(text).textContent = value;
+      }
 
-function drawHelmet(motors){
-  const cv=document.getElementById('cvHelmet');
-  const W=cv.offsetWidth||600,H=180;
-  cv.width=W;cv.height=H;
-  const ctx=cv.getContext('2d');
-  const cx=W/2,cy=H/2;
-  ctx.fillStyle='#0a1420';ctx.fillRect(0,0,W,H);
+      function updateHaptics(r) {
+        const powers = Array(10).fill(0);
+        if (r.leftThreat > .12) [6,7,8].forEach(i => powers[i] = r.leftThreat);
+        if (r.rightThreat > .12) [1,2,3].forEach(i => powers[i] = r.rightThreat);
+        if (r.frontThreat > .52) [0,1,9].forEach(i => powers[i] = Math.max(powers[i], r.frontThreat));
+        if (r.roadThreat > .1) [0,4,5,9].forEach(i => powers[i] = Math.max(powers[i], r.roadThreat));
+        document.querySelectorAll('.motor').forEach((motor, i) => {
+          motor.style.setProperty('--power', powers[i].toFixed(2));
+          motor.classList.toggle('is-on', powers[i] > .12);
+        });
+        const max = Math.max(...powers);
+        $('#hapticMode').textContent = max > .72 ? 'Strong pulse' : max > .12 ? 'Directional pulse' : 'Idle';
+      }
 
-  // Outer ring (guide)
-  ctx.beginPath();ctx.ellipse(cx,cy,105,78,0,0,Math.PI*2);
-  ctx.strokeStyle='rgba(80,140,255,.08)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.stroke();ctx.setLineDash([]);
+      function updateRelays(r) {
+        const relayStates = [r.brake, r.leftThreat > .35, r.rightThreat > .35, r.lowBeam];
+        document.querySelectorAll('.relay').forEach((relay, i) => {
+          relay.classList.toggle('is-on', relayStates[i]);
+          relay.classList.toggle('is-danger', i === 0 && relayStates[i]);
+        });
+      }
 
-  // Helmet oval
-  ctx.beginPath();ctx.ellipse(cx,cy,58,42,0,0,Math.PI*2);
-  const hg=ctx.createRadialGradient(cx,cy,0,cx,cy,58);
-  hg.addColorStop(0,'#142040');hg.addColorStop(1,'#0a1530');
-  ctx.fillStyle=hg;ctx.fill();
-  ctx.strokeStyle='rgba(60,120,255,.2)';ctx.lineWidth=1.5;ctx.stroke();
-  ctx.fillStyle='rgba(80,140,255,.15)';ctx.font='8px sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('HELMET',cx,cy);
+      function fitCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+          canvas.width = Math.round(rect.width * dpr);
+          canvas.height = Math.round(rect.height * dpr);
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, w: rect.width, h: rect.height };
+      }
 
-  // Direction labels inside helmet oval
-  ctx.fillStyle='rgba(80,140,255,.3)';ctx.font='7px monospace';
-  ctx.fillText('↑ F',cx,cy-28);ctx.fillText('↓ R',cx,cy+28);
-  ctx.fillText('L',cx-40,cy);ctx.fillText('R',cx+40,cy);
+      function drawField(r) {
+        const { ctx, w, h } = fitCanvas($('#fieldCanvas'));
+        ctx.clearRect(0, 0, w, h);
+        const cx = w / 2;
+        const cy = h * .52;
+        const scale = Math.min(w / 700, h / 720);
 
-  motors.forEach((p,i)=>{
-    const a=MA[i],r=MRad[i];
-    const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);
-    const isBS=(i===8||i===9);
-    const c=mColor(p);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(120,165,185,.11)';
+        ctx.lineWidth = 1;
+        [90, 155, 225].forEach(radius => { ctx.beginPath(); ctx.arc(cx, cy, radius * scale, 0, Math.PI * 2); ctx.stroke(); });
+        ctx.setLineDash([5, 8]);
+        ctx.beginPath(); ctx.moveTo(cx, 125); ctx.lineTo(cx, h - 90); ctx.stroke();
+        ctx.setLineDash([]);
 
-    // Blind-spot motors get outer ring
-    if(isBS){
-      ctx.beginPath();ctx.arc(x,y,14,0,Math.PI*2);
-      ctx.strokeStyle=p>0?`rgba(255,170,0,.4)`:'rgba(60,120,255,.18)';
-      ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
-    }
+        drawSector(ctx, cx, cy, -Math.PI / 2, r.criticalDistance, state.front, scale, '#3dd8f5', r.frontThreat);
+        drawSector(ctx, cx, cy, Math.PI / 2, 105, state.rear, scale, '#aa8bff', r.rearThreat);
+        drawSide(ctx, cx, cy, -1, state.left, scale, r.leftThreat);
+        drawSide(ctx, cx, cy, 1, state.right, scale, r.rightThreat);
+        drawBike(ctx, cx, cy, scale);
 
-    // Motor circle
-    ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);
-    if(c){
-      const mg=ctx.createRadialGradient(x,y,0,x,y,9);
-      mg.addColorStop(0,`rgba(${c[0]},${c[1]},${c[2]},0.95)`);
-      mg.addColorStop(1,`rgba(${c[0]},${c[1]},${c[2]},0.5)`);
-      ctx.fillStyle=mg;
-    }else{
-      ctx.fillStyle='rgba(255,255,255,.07)';
-    }
-    ctx.fill();
-    ctx.strokeStyle=c?`rgba(${c[0]},${c[1]},${c[2]},.5)`:'rgba(255,255,255,.1)';
-    ctx.lineWidth=1;ctx.stroke();
+        if (r.roadThreat > .05) {
+          const y = cy - 175 * scale;
+          ctx.fillStyle = `rgba(255,99,125,${.18 + r.roadThreat * .36})`;
+          ctx.beginPath(); ctx.ellipse(cx + 45 * scale, y, 42 * scale, 18 * scale, -.2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#ff637d'; ctx.stroke();
+          label(ctx, 'POTHOLE', cx + 45 * scale, y - 27 * scale, '#ff8ea1');
+        }
+        ctx.restore();
+      }
 
-    // Ripple on active
-    if(p>0&&c){
-      const rp=9+p*14;
-      ctx.beginPath();ctx.arc(x,y,rp,0,Math.PI*2);
-      ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${p*.3})`;
-      ctx.lineWidth=1.5;ctx.stroke();
-    }
+      function drawSector(ctx, cx, cy, angle, envelope, distance, scale, color, threat) {
+        const maxRadius = 240 * scale;
+        const radius = clamp(distance / Math.max(envelope, 1), .12, 1) * maxRadius;
+        ctx.fillStyle = color.replace(')', `,${.04 + threat * .12})`).replace('rgb', 'rgba');
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = .48 + threat * .5;
+        ctx.beginPath(); ctx.arc(cx, cy, maxRadius, angle - .38, angle + .38); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        obstacle(ctx, x, y, distance, color, threat);
+        ctx.globalAlpha = 1;
+      }
 
-    // % label inside circle
-    if(p>0&&c){
-      ctx.fillStyle='#fff';ctx.font='bold 6px monospace';
-      ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(Math.round(p*100)+'%',x,y);
-    }
+      function drawSide(ctx, cx, cy, dir, distance, scale, threat) {
+        const x = cx + dir * clamp(distance / 100, .25, 1.25) * 150 * scale;
+        obstacle(ctx, x, cy + 5 * scale, distance, threat > .35 ? '#ffbd66' : '#3dd8f5', threat);
+      }
 
-    // Motor name outside circle
-    const lo=isBS?16:13;
-    const lx=x+Math.cos(a)*lo,ly=y+Math.sin(a)*lo;
-    const offx=Math.abs(Math.cos(a))<.3?0:Math.cos(a)>0?6:-6;
-    const offy=Math.sin(a)>0?8:-8;
-    ctx.fillStyle=c?`rgba(${c[0]},${c[1]},${c[2]},.7)`:'rgba(180,200,220,.25)';
-    ctx.font=isBS?'bold 7px monospace':'6px monospace';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(MN[i],x+Math.cos(a)*(isBS?20:16),y+Math.sin(a)*(isBS?20:16));
-  });
+      function obstacle(ctx, x, y, distance, color, threat) {
+        const size = 7 + threat * 7;
+        ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 8 + threat * 20;
+        ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        label(ctx, `${Math.round(distance)} CM`, x, y - 16, color);
+      }
 
-  // Title
-  ctx.fillStyle='rgba(80,140,255,.35)';ctx.font='8px monospace';
-  ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('10-motor haptic ring · Algorithm B',6,5);
-}
+      function label(ctx, text, x, y, color) {
+        ctx.fillStyle = color; ctx.font = '600 9px "JetBrains Mono"'; ctx.textAlign = 'center'; ctx.fillText(text, x, y);
+      }
 
-// ═══════════════════════════════════════════════════
-//  OLED DISPLAYS — independent timers, fixed formula
-// ═══════════════════════════════════════════════════
-// flashInterval: 80ms at 10cm (fast/urgent), 800ms at 100cm (slow/warn)
-// Formula: 80 + 720 * clamp((dist-10)/90, 0, 1)
-function flashMs(d){
-  if(d<=0.5||d>=100)return 0;
-  return Math.round(80+720*Math.min(1,Math.max(0,(d-10)/90)));
-}
+      function drawBike(ctx, x, y, s) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+        const gradient = ctx.createLinearGradient(-25, -70, 25, 70); gradient.addColorStop(0, '#6fe8fa'); gradient.addColorStop(1, '#596f81');
+        ctx.shadowColor = 'rgba(61,216,245,.45)'; ctx.shadowBlur = 20;
+        ctx.fillStyle = '#071019'; ctx.strokeStyle = gradient; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.roundRect(-25, -68, 50, 136, 24); ctx.fill(); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.fillStyle = '#152b3b'; ctx.fillRect(-17, -18, 34, 52);
+        ctx.fillStyle = '#3dd8f5'; ctx.fillRect(-4, -78, 8, 18); ctx.fillRect(-4, 60, 8, 18);
+        ctx.strokeStyle = '#a5bdc9'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-38,-43); ctx.lineTo(38,-43); ctx.stroke();
+        ctx.restore();
+      }
 
-function drawOLEDIdle(ctx,side){
-  ctx.fillStyle='#000';ctx.fillRect(0,0,128,64);
-  // Nav arrow (simulated companion app)
-  ctx.fillStyle='#0d2a0d';ctx.font='bold 26px sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('↑',64,30);
-  ctx.fillStyle='#1a3f1a';ctx.font='7px monospace';
-  ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('CONTINUE 2.4km',64,50);
-  ctx.fillStyle='#0f1f0f';ctx.fillText((side==='L'?'LEFT':'RIGHT')+' CLEAR',64,3);
-}
+      function drawTelemetry() {
+        const { ctx, w, h } = fitCanvas($('#telemetryCanvas'));
+        ctx.clearRect(0, 0, w, h);
+        const pad = 12;
+        ctx.strokeStyle = 'rgba(120,165,185,.12)'; ctx.lineWidth = 1;
+        [25,50,75].forEach(v => { const y = h - pad - (v/100)*(h-pad*2); ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke(); });
+        const gradient = ctx.createLinearGradient(0, 0, 0, h); gradient.addColorStop(0, 'rgba(61,216,245,.35)'); gradient.addColorStop(1, 'rgba(61,216,245,0)');
+        ctx.beginPath();
+        riskHistory.forEach((value, i) => { const x = pad + i/(riskHistory.length-1)*(w-pad*2); const y = h-pad-value/100*(h-pad*2); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
+        ctx.strokeStyle = '#3dd8f5'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.lineTo(w-pad,h-pad); ctx.lineTo(pad,h-pad); ctx.closePath(); ctx.fillStyle = gradient; ctx.fill();
+      }
 
-function drawOLEDWarn(ctx,dist,side,phase){
-  ctx.fillStyle='#000';ctx.fillRect(0,0,128,64);
-  if(!phase)return; // OFF phase = pure black (power-save flash)
-  const br=Math.max(0.3,1-(dist-10)/90); // brightness 0.3..1 by closeness
-  const rv=Math.round(255),gv=Math.round(40*(1-br)),bv=0;
-  ctx.fillStyle=`rgb(${rv},${gv},${bv})`;ctx.fillRect(0,0,128,15);
-  ctx.fillStyle='#fff';ctx.font='bold 8px monospace';
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText((side==='L'?'!! LEFT':'!! RIGHT')+' BLIND SPOT',64,8);
-  // Large distance
-  ctx.fillStyle=`rgb(255,${Math.round(130*br)},0)`;
-  ctx.font='bold 26px monospace';ctx.textAlign='center';ctx.textBaseline='top';
-  ctx.fillText(dist<100?dist.toFixed(0)+'cm':'>99',64,18);
-  ctx.fillStyle='rgba(255,100,0,.7)';ctx.font='7px monospace';
-  ctx.textBaseline='bottom';ctx.fillText('OBSTACLE DETECTED',64,63);
-}
+      function logEvent(text, tone = 'cyan') {
+        const colors = { cyan: 'var(--cyan)', green: 'var(--green)', amber: 'var(--amber)', red: 'var(--red)' };
+        const event = document.createElement('div');
+        event.className = 'event';
+        event.style.setProperty('--event', colors[tone] || colors.cyan);
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        event.innerHTML = `<span class="event__dot"></span><span class="event__text">${text}</span><span class="event__time">${time}</span>`;
+        $('#eventFeed').prepend(event);
+        while ($('#eventFeed').children.length > 7) $('#eventFeed').lastElementChild.remove();
+      }
 
-function tickOLED(oled,d,now){
-  const iv=flashMs(d);
-  if(iv===0){oled.active=false;oled.phase=false;return;}
-  oled.active=true;
-  if(now-oled.last>=iv){oled.last=now;oled.phase=!oled.phase;}
-}
+      function heartbeat() {
+        if (running) {
+          packetCount += 2;
+          $('#packetCount').textContent = packetCount.toLocaleString('en-IN');
+          $('#loopLatency').textContent = String(18 + Math.floor(Math.random() * 9));
+          $('#uplink').textContent = (99.6 + Math.random() * .3).toFixed(1);
+          const risk = calculate().risk;
+          riskHistory.push(clamp(risk + Math.round((Math.random() - .5) * 4), 0, 100));
+          riskHistory = riskHistory.slice(-24);
+          drawTelemetry();
+        }
+      }
 
-function drawOLEDs(now){
-  // Left OLED
-  tickOLED(OLED.L,S.lm,now);
-  const ctxL=document.getElementById('cvOledL').getContext('2d');
-  if(OLED.L.active){
-    drawOLEDWarn(ctxL,S.lm,'L',OLED.L.phase);
-  }else{
-    if(now-idleDrawL>1000){idleDrawL=now;drawOLEDIdle(ctxL,'L');}
-  }
-  // Right OLED
-  tickOLED(OLED.R,S.rm,now);
-  const ctxR=document.getElementById('cvOledR').getContext('2d');
-  if(OLED.R.active){
-    drawOLEDWarn(ctxR,S.rm,'R',OLED.R.phase);
-  }else{
-    if(now-idleDrawR>1000){idleDrawR=now;drawOLEDIdle(ctxR,'R');}
-  }
-  // Flash info labels
-  const fi=id=>document.getElementById(id);
-  fi('flashInfoL').textContent=OLED.L.active
-    ?`Flash: ${(1000/flashMs(S.lm)).toFixed(1)} Hz · ${OLED.L.phase?'ON':'off'} · ${S.lm.toFixed(0)}cm`
-    :'Idle · nav mode';
-  fi('flashInfoR').textContent=OLED.R.active
-    ?`Flash: ${(1000/flashMs(S.rm)).toFixed(1)} Hz · ${OLED.R.phase?'ON':'off'} · ${S.rm.toFixed(0)}cm`
-    :'Idle · nav mode';
-}
-
-// ═══════════════════════════════════════════════════
-//  LCD
-// ═══════════════════════════════════════════════════
-function drawLCD(){
-  AS.pkt++;
-  const ldr=S.ldr<8000?'NGT':'DAY';
-  const lm=S.lm<100?`LM:${S.lm.toFixed(0)}!`:'LM:OK ';
-  const rm=S.rm<100?`RM:${S.rm.toFixed(0)}!`:'RM:OK ';
-  const l1=`SPD:${String(Math.round(S.spd)).padStart(3)}km  LN:${S.lean>=0?' ':''}${S.lean.toFixed(1)}\u00b0`;
-  const l2=`F:${String(Math.round(S.front)).padStart(3)} R:${String(Math.round(S.rear)).padStart(3)} L:${String(Math.round(S.left)).padStart(3)} S:${String(Math.round(S.right)).padStart(3)}`;
-  const l3=`${ldr} ${AS.pot?'POT!':'OK  '} BM:${AS.highBeam?'HI':'LO'} ${lm} ${rm}`.slice(0,20);
-  const l4=`LINK:OK  PKT:${String(AS.pkt).padStart(8,'0').slice(-8)}  `;
-  document.getElementById('lcd').textContent=[l1,l2,l3,l4].join('\n');
-}
-
-// ═══════════════════════════════════════════════════
-//  RISK GAUGE
-// ═══════════════════════════════════════════════════
-function updateRisk(r){
-  const arc=document.getElementById('riskArc');
-  const total=173; // arc length of semicircle path
-  arc.setAttribute('stroke-dasharray',`${r/100*total} ${total}`);
-  document.getElementById('riskNum').textContent=r;
-  document.getElementById('riskBar').style.width=r+'%';
-  let col,lbl;
-  if(r<=30){col='var(--ok)';lbl='All clear';}
-  else if(r<=65){col='var(--warn)';lbl='Caution';}
-  else{col='var(--danger)';lbl='HIGH RISK';}
-  document.getElementById('riskBar').style.background=col;
-  document.getElementById('riskLbl').textContent=lbl;
-  document.getElementById('riskLbl').style.color=col;
-  const parts=[];
-  if(S.front>0&&S.front<300)parts.push(`front +${Math.round(40*(1-S.front/300))}`);
-  if(S.rear>0&&S.rear<200) parts.push(`rear +${Math.round(15*(1-S.rear/200))}`);
-  if(S.lm>0&&S.lm<100)     parts.push(`L.mir +${Math.round(8*(1-S.lm/100))}`);
-  if(S.rm>0&&S.rm<100)     parts.push(`R.mir +${Math.round(8*(1-S.rm/100))}`);
-  if(AS.pot)parts.push('pothole +12');
-  document.getElementById('riskFactors').textContent=parts.length?parts.join(' · '):'No risk factors';
-}
-
-// ═══════════════════════════════════════════════════
-//  ALGORITHM STATUS CARDS
-// ═══════════════════════════════════════════════════
-function updateAlgos(motors){
-  const aA=document.getElementById('algoA'),cA=document.getElementById('cardA');
-  if(AS.highBeam){aA.textContent='High beam active (front clear)';aA.style.color='var(--ok)';cA.className='algo-card';}
-  else{aA.textContent=`Low beam — vehicle at ${S.front.toFixed(0)}cm < 300cm`;aA.style.color='var(--warn)';cA.className='algo-card active';}
-
-  const active=motors.filter(p=>p>0).length;
-  const aB=document.getElementById('algoB'),cB=document.getElementById('cardB');
-  const bsOn=motors[8]>0||motors[9]>0;
-  if(active===0){aB.textContent='All 10 motors idle';aB.style.color='var(--text3)';cB.className='algo-card';}
-  else{
-    const mx=Math.round(Math.max(...motors)*100);
-    aB.textContent=`${active} motor${active>1?'s':''} active · max ${mx}%${bsOn?' · blind spot!':''}`;
-    aB.style.color=mx>65?'var(--danger)':'var(--warn)';
-    cB.className='algo-card'+(mx>65?' alert':' active');
-  }
-
-  const aC=document.getElementById('algoC'),cC=document.getElementById('cardC');
-  if(AS.pot){aC.textContent='POTHOLE DETECTED — IR + US + IMU fused';aC.style.color='var(--danger)';cC.className='algo-card alert';}
-  else{aC.textContent=`Monitoring · lean ${Math.abs(S.lean).toFixed(0)}° · road level`;aC.style.color='var(--text3)';cC.className='algo-card';}
-}
-
-// ═══════════════════════════════════════════════════
-//  RELAY PANEL (bug-fixed: L/R indicators wired to blind spot)
-// ═══════════════════════════════════════════════════
-function updateRelays(){
-  const brk=S.front>0&&S.front<30&&Math.abs(S.lean)<30;
-  const lBS=bsActive(S.lm),rBS=bsActive(S.rm);
-  const dot=(id,cls)=>{const d=document.getElementById(id);d.className='relay-dot '+cls;};
-  dot('r0',brk?'danger':'');
-  dot('r1',lBS?'danger':'');   // Left indicator ← blind spot (bug-fixed)
-  dot('r2',rBS?'danger':'');   // Right indicator ← blind spot (bug-fixed)
-  dot('r3',AS.highBeam?'on':'warn');
-  dot('r4','on');
-}
-
-// ═══════════════════════════════════════════════════
-//  BLIND SPOT PANEL
-// ═══════════════════════════════════════════════════
-function updateBS(motors){
-  function side(distEl,infoEl,barEl,cellEl,d,m,isLeft){
-    const active=bsActive(d);
-    const pct=Math.round(m*100);
-    const dist=d>0?d.toFixed(0)+' cm':'>400 cm';
-    const col=active?(d<30?'var(--danger)':d<60?'var(--warn)':'var(--text)'):'var(--ok)';
-    document.getElementById(distEl).textContent=dist;
-    document.getElementById(distEl).style.color=col;
-    const hz=active?(1000/flashMs(d)).toFixed(1):0;
-    const oledState=isLeft?OLED.L:OLED.R;
-    document.getElementById(infoEl).innerHTML=
-      `OLED: ${active?(oledState.phase?'● WARNING ON':'○ flash off'):'nav mode'}<br>`+
-      `Motor ${isLeft?8:9}: ${pct}%<br>`+
-      `Relay: ${active?'ACTIVE':'off'}`+
-      (active?`<br>Flash: ${hz} Hz`:'');
-    const fill=pct/100*100;
-    document.getElementById(barEl).style.width=fill+'%';
-    document.getElementById(barEl).style.background=col;
-    document.getElementById(cellEl).className='bs-cell'+(active?' alert':'');
-  }
-  side('bsLdist','bsLinfo','bsLbar','bsL',S.lm,motors[8],true);
-  side('bsRdist','bsRinfo','bsRbar','bsR',S.rm,motors[9],false);
-}
-
-// ═══════════════════════════════════════════════════
-//  JSON TELEMETRY
-// ═══════════════════════════════════════════════════
-function updateJSON(motors,r){
-  const o={
-    ts:Date.now(),pkt:AS.pkt,risk:r,
-    dist:{front:Math.round(S.front),rear:Math.round(S.rear),left:Math.round(S.left),right:Math.round(S.right),lMirror:Math.round(S.lm),rMirror:Math.round(S.rm),pothole:Math.round(S.pot)},
-    blindspot:{left:{dist:Math.round(S.lm),active:bsActive(S.lm),motor8_pct:Math.round(motors[8]*100),relay_fired:bsActive(S.lm),flash_hz:bsActive(S.lm)?parseFloat((1000/flashMs(S.lm)).toFixed(1)):0},
-               right:{dist:Math.round(S.rm),active:bsActive(S.rm),motor9_pct:Math.round(motors[9]*100),relay_fired:bsActive(S.rm),flash_hz:bsActive(S.rm)?parseFloat((1000/flashMs(S.rm)).toFixed(1)):0}},
-    relay:{brake:S.front<30,highBeam:AS.highBeam,leftInd:bsActive(S.lm),rightInd:bsActive(S.rm)},
-    imu:{lean:+S.lean.toFixed(1),accelZ:9.81},
-    pothole:AS.pot,ldr:{bike:S.ldr},gps:{spd:Math.round(S.spd),lat:19.876,lon:75.343},
-    haptic_pwm:motors.map(p=>Math.round(p*4095))
-  };
-  document.getElementById('jsonBox').textContent=JSON.stringify(o,null,2);
-}
-
-// ═══════════════════════════════════════════════════
-//  MAIN LOOP
-// ═══════════════════════════════════════════════════
-let tick=0;
-function loop(){
-  const now=Date.now();
-  algoA();algoC();
-  const motors=algoB();
-  const r=computeRisk();
-
-  drawBike();
-  drawHelmet(motors);
-  drawOLEDs(now);
-
-  if(tick%2===0){
-    drawLCD();
-    updateRisk(r);
-    updateAlgos(motors);
-    updateRelays();
-    updateBS(motors);
-  }
-  if(tick%10===0)updateJSON(motors,r);
-  tick++;
-}
-
-// Initial OLED idle draw
-(function initOLEDs(){
-  const ctxL=document.getElementById('cvOledL').getContext('2d');
-  const ctxR=document.getElementById('cvOledR').getContext('2d');
-  drawOLEDIdle(ctxL,'L');drawOLEDIdle(ctxR,'R');
-  idleDrawL=idleDrawR=Date.now();
-})();
-
-setInterval(loop,50);
-loop();
-</script>
+      buildUI();
+      syncControls();
+      logEvent('Dual-MCU handshake verified', 'green');
+      logEvent('Safety engine online · 27 vectors/cycle', 'cyan');
+      update(true);
+      setInterval(heartbeat, 900);
+    })();
+  </script>
+  <script src="site.js"></script>
 </body>
 </html>

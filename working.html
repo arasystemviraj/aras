@@ -7,7 +7,8 @@
 <meta name="description" content="TwinKey ARAS by Viraj Dandwate. A patent-pending (App: 202521120497) Dual-MCU Advanced Rider Assistive System eradicating thread starvation in edge computing.">
 <link rel="icon" href="/favicon.png" type="image/png">
 
-<title>TwinKey ARAS | Advanced Rider Assistive System - Complete Engineering Dossier</title> 
+<title>TwinKey ARAS | Advanced Rider Assistive System - Complete Engineering Dossier</title>
+<link rel="stylesheet" href="site.css">
 <script src="https://cdn.tailwindcss.com"></script> 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
 <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet"> 
@@ -1656,7 +1657,7 @@
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         // Initialize AOS
-        AOS.init({ once: false, offset: 80, duration: 900, easing: 'ease-out-cubic' });
+        if (window.AOS) AOS.init({ once: true, offset: 80, duration: 700, easing: 'ease-out-cubic' });
 
         function animateMetric(el) {
             const endValue = Number(el.dataset.countTo || 0);
@@ -1691,13 +1692,42 @@
             });
         }
 
-        const navigationLinks = document.querySelectorAll('.nav-link, .doc-nav-link');
+        const navigationLinks = document.querySelectorAll('.nav-link, .doc-nav-link, .toc-link');
+        const pageSections = document.querySelectorAll('.page-section');
+
+        function showSection(hash, updateHistory = false) {
+            const requested = hash && document.querySelector(hash);
+            const target = requested?.classList.contains('page-section') ? requested : document.getElementById('page-exec');
+            if (!target) return;
+
+            pageSections.forEach(section => {
+                const active = section === target;
+                section.classList.toggle('hidden', !active);
+                section.classList.toggle('block', active);
+                section.setAttribute('aria-hidden', String(!active));
+            });
+            navigationLinks.forEach(link => {
+                const active = link.getAttribute('href') === `#${target.id}`;
+                link.classList.toggle('active', active);
+                if (active) link.setAttribute('aria-current', 'page');
+                else link.removeAttribute('aria-current');
+            });
+            if (updateHistory) history.pushState(null, '', `#${target.id}`);
+            requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+        }
+
         navigationLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                navigationLinks.forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
+            link.addEventListener('click', event => {
+                const hash = link.getAttribute('href');
+                if (!hash?.startsWith('#page-')) return;
+                event.preventDefault();
+                showSection(hash, true);
+                document.querySelector(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
+
+        window.addEventListener('popstate', () => showSection(location.hash));
+        showSection(location.hash || '#page-exec');
 
         const sectionObserver = new IntersectionObserver((entries) => {
             const visible = entries
@@ -1725,6 +1755,13 @@
         });
 
         // Chart.js Globals
+        if (!window.Chart) {
+            document.querySelectorAll('canvas').forEach(canvas => canvas.replaceWith(Object.assign(document.createElement('p'), {
+                className: 'text-sm text-amber-300',
+                textContent: 'Chart preview unavailable while the chart library is offline.'
+            })));
+            throw new Error('Chart.js unavailable');
+        }
         Chart.defaults.color = '#64748b';
         Chart.defaults.font.family = "'JetBrains Mono', monospace";
         Chart.defaults.animation.duration = 1100;
@@ -1882,5 +1919,6 @@
 
         animateVisibleMetrics();
     </script>
+    <script src="site.js"></script>
 </body>
 </html>
