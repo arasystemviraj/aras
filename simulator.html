@@ -447,4 +447,861 @@
       padding: .9rem 1rem; border-bottom: 1px solid var(--line);
     }
     .test-log-table {
-      width: 100%; border-collapse: collapse; font: 60
+      width: 100%; border-collapse: collapse; font: 600 .62rem/1 var(--mono);
+    }
+    .test-log-table th {
+      padding: .5rem .65rem; color: var(--muted); text-align: left; font-size: .55rem;
+      letter-spacing: .1em; text-transform: uppercase; border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .test-log-table td {
+      padding: .48rem .65rem; color: var(--soft); border-bottom: 1px solid rgba(141,180,203,.06);
+      white-space: nowrap; font-size: .6rem;
+    }
+    .test-log-table tr:last-child td { border-bottom: 0; }
+    .test-log-table tr:hover td { background: rgba(61,216,245,.04); }
+    .log-badge {
+      display: inline-block; padding: .15rem .42rem; border-radius: 5px;
+      font: 700 .52rem/1.4 var(--mono); letter-spacing: .06em;
+    }
+    .log-badge--pass { background: rgba(73,230,160,.14); color: var(--green); }
+    .log-badge--warn { background: rgba(255,189,102,.12); color: var(--amber); }
+    .log-badge--aeb  { background: rgba(255,99,125,.14); color: var(--red); }
+    .log-badge--road { background: rgba(170,139,255,.14); color: var(--purple); }
+
+    /* ── FLOWCHART TAB ── */
+    .tab-bar {
+      display: flex; gap: 0; border-bottom: 1px solid var(--line);
+    }
+    .tab {
+      padding: .65rem 1rem; border: 0; border-bottom: 2px solid transparent;
+      color: var(--muted); font: 700 .62rem/1 var(--mono); letter-spacing: .08em;
+      text-transform: uppercase; cursor: pointer; background: none; transition: 140ms ease;
+    }
+    .tab:hover { color: var(--soft); }
+    .tab.is-active { color: var(--cyan); border-bottom-color: var(--cyan); }
+    .tab-content { display: none; }
+    .tab-content.is-active { display: block; }
+
+    /* flowchart canvas */
+    #flowCanvas { width: 100%; height: 420px; display: block; }
+
+    /* ── CSV EXPORT BTN ── */
+    .btn--export {
+      color: var(--green); border-color: rgba(73,230,160,.3); background: rgba(73,230,160,.06);
+      font-size: .62rem; padding: .4rem .7rem; min-height: 32px;
+    }
+    .btn--export:hover { border-color: var(--green); background: rgba(73,230,160,.13); color: #fff; }
+  </style>
+</head>
+<body>
+  <main class="app" id="main-content">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Interactive dual-MCU test bench</p>
+        <h1>Safety decisions, <span>made visible.</span></h1>
+      </div>
+      <div class="session-controls" aria-label="Simulation controls">
+        <button class="btn is-active" id="runToggle" type="button" aria-pressed="true"><span class="live-dot" aria-hidden="true"></span><span>Live</span></button>
+        <button class="btn" id="resetButton" type="button">Reset</button>
+        <button class="btn btn--danger" id="brakeButton" type="button">Emergency brake</button>
+      </div>
+    </header>
+
+    <section class="system-strip" aria-label="Live system status">
+      <div class="system-cell system-state">
+        <div class="system-state__icon" aria-hidden="true">✓</div>
+        <div><div class="system-cell__label">System state</div><div class="system-cell__value" id="systemState">Nominal</div><div class="system-cell__sub" id="systemSub">Safety loop is deterministic</div></div>
+      </div>
+      <div class="system-cell"><div class="system-cell__label">MCU1 loop</div><div class="system-cell__value"><span id="loopLatency">22</span> ms</div><div class="system-cell__sub">Safety / actuation</div></div>
+      <div class="system-cell"><div class="system-cell__label">MCU2 uplink</div><div class="system-cell__value"><span id="uplink">99.8</span>%</div><div class="system-cell__sub">Telemetry health</div></div>
+      <div class="system-cell"><div class="system-cell__label">Speed</div><div class="system-cell__value"><span id="speedReadout">45</span> km/h</div><div class="system-cell__sub">Dynamic envelope</div></div>
+      <div class="system-cell"><div class="system-cell__label">Packets</div><div class="system-cell__value" id="packetCount">12,480</div><div class="system-cell__sub">Zero dropped</div></div>
+    </section>
+
+    <div class="layout">
+      <aside class="stack" aria-label="Simulation inputs">
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Road scenarios</h2><span class="panel__hint">One-tap presets</span></div>
+          <div class="panel__body scenario-grid" id="scenarioGrid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Sensor field</h2><span class="panel__hint">Manual input</span></div>
+          <div class="panel__body sensor-list" id="sensorList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Vehicle platform</h2><span class="panel__hint">Claim 9 — multi-vehicle</span></div>
+          <div class="vehicle-select" id="vehicleSelect">
+            <button class="vtype is-active" data-vtype="motorcycle" type="button"><span class="vtype__icon">🏍️</span>Motorcycle</button>
+            <button class="vtype" data-vtype="scooter" type="button"><span class="vtype__icon">🛵</span>Scooter</button>
+            <button class="vtype" data-vtype="ev" type="button"><span class="vtype__icon">⚡</span>EV Two-Wheeler</button>
+            <button class="vtype" data-vtype="car" type="button"><span class="vtype__icon">🚗</span>Car</button>
+          </div>
+          <div style="padding:.1rem 1rem .8rem; color:var(--muted); font:600 .6rem/1.5 var(--mono);" id="vtypeNote">Ground clearance: 18 cm · AEB threshold: 50 cm</div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Isolation layer</h2><span class="panel__hint">UART only</span></div>
+          <div class="panel__body mcu-flow">
+            <div class="mcu"><div class="mcu__id">MCU 01</div><div class="mcu__name">Safety engine</div><div class="mcu__meta">Sensors · fusion · relays</div></div>
+            <div class="uart">→ UART</div>
+            <div class="mcu"><div class="mcu__id">MCU 02</div><div class="mcu__name">Network node</div><div class="mcu__meta">Display · logs · uplink</div></div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="panel stage" aria-labelledby="stageTitle">
+        <div class="stage__top">
+          <div class="stage-copy"><p class="eyebrow">360° proximity fusion</p><h2 id="stageTitle">Vehicle safety field</h2><p>Distance, lean and speed combine into one adaptive intervention envelope.</p></div>
+          <div class="risk-orb" id="riskOrb" aria-live="polite"><div><div class="risk-orb__number" id="riskValue">08</div><div class="risk-orb__label" id="riskLabel">Low risk</div></div></div>
+        </div>
+        <canvas id="fieldCanvas" role="img" aria-label="Top-down motorcycle proximity and hazard visualization"></canvas>
+        <div class="decision-bar" aria-live="polite">
+          <div class="decision" id="brakeDecision"><div class="decision__label">Braking</div><div class="decision__value" id="brakeDecisionText">Standby · envelope clear</div></div>
+          <div class="decision" id="beamDecision"><div class="decision__label">Headlight</div><div class="decision__value" id="beamDecisionText">High beam available</div></div>
+          <div class="decision" id="hapticDecision"><div class="decision__label">Haptics</div><div class="decision__value" id="hapticDecisionText">All motors idle</div></div>
+        </div>
+      </section>
+
+      <!-- CONFIDENCE + AEB TIMER + TEST LOG + FLOWCHART -->
+      <div style="grid-column:1/-1; display:grid; gap:1rem; margin-top:.2rem;">
+
+        <!-- Confidence Score Bar -->
+        <section class="panel" aria-label="Detection confidence">
+          <div class="panel__head">
+            <h2 class="panel__title">Sensor fusion confidence</h2>
+            <span class="panel__hint">Patent Claim 1 — weighted fusion</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);">
+            <div class="confidence-bar" style="background:rgba(6,14,22,.7);">
+              <div><div class="confidence-label">Ultrasonic</div><div class="confidence-track"><div class="confidence-fill" id="confUS" style="width:0%"></div></div></div>
+              <div class="confidence-value" id="confUSVal">—</div>
+            </div>
+            <div class="confidence-bar" style="background:rgba(6,14,22,.7);">
+              <div><div class="confidence-label">IR Surface</div><div class="confidence-track"><div class="confidence-fill" id="confIR" style="width:0%; background:linear-gradient(90deg,var(--purple),var(--cyan))"></div></div></div>
+              <div class="confidence-value" id="confIRVal">—</div>
+            </div>
+            <div class="confidence-bar" style="background:rgba(6,14,22,.7);">
+              <div><div class="confidence-label">Humidity</div><div class="confidence-track"><div class="confidence-fill" id="confHum" style="width:0%; background:linear-gradient(90deg,var(--amber),var(--green))"></div></div></div>
+              <div class="confidence-value" id="confHumVal">—</div>
+            </div>
+            <div class="confidence-bar" style="background:rgba(8,20,32,.9); border-left:1px solid var(--line-strong);">
+              <div><div class="confidence-label">Overall confidence</div><div class="confidence-track"><div class="confidence-fill" id="confOverall" style="width:0%"></div></div></div>
+              <div class="confidence-value" id="confOverallVal">—</div>
+            </div>
+          </div>
+          <div class="aeb-timer" id="aebTimer">
+            <span>⚠ AEB RELAY ARMED</span>
+            <span class="aeb-countdown" id="aebCountdown">0.0s</span>
+            <span>— obstacle confirmed within envelope</span>
+          </div>
+        </section>
+
+        <!-- Test Log Table + Flowchart Tab -->
+        <section class="panel test-log-section">
+          <div class="tab-bar">
+            <button class="tab is-active" data-tab="log" type="button">Test log</button>
+            <button class="tab" data-tab="flowchart" type="button">Algorithm flowchart</button>
+          </div>
+
+          <!-- LOG TAB -->
+          <div class="tab-content is-active" id="tab-log">
+            <div class="test-log-head">
+              <span style="color:var(--muted);font:700 .6rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;">Last 12 decisions · auto-updated</span>
+              <button class="btn btn--export" id="exportCsv" type="button">⬇ Export CSV</button>
+            </div>
+            <div style="overflow-x:auto;">
+              <table class="test-log-table" id="testLogTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Timestamp</th>
+                    <th>Vehicle</th>
+                    <th>Ultrasonic</th>
+                    <th>IR</th>
+                    <th>Humidity</th>
+                    <th>Road delta</th>
+                    <th>Classification</th>
+                    <th>AEB</th>
+                    <th>Confidence</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody id="testLogBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- FLOWCHART TAB -->
+          <div class="tab-content" id="tab-flowchart">
+            <canvas id="flowCanvas" role="img" aria-label="Real-time sensor fusion decision flowchart"></canvas>
+          </div>
+        </section>
+
+      </div>
+
+      <aside class="stack stack--right" aria-label="System outputs">
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Rider displays</h2><span class="panel__hint">I²C + parallel</span></div>
+          <div class="panel__body display-cluster">
+            <div class="oled-pair">
+              <div class="display-unit">
+                <div class="display-unit__label"><span>OLED-L · 0.96 in</span><span>128×64</span></div>
+                <div class="oled" id="oledLeft" role="img" aria-label="Left 0.96 inch OLED display">
+                  <div class="oled__top"><span>ARAS / LEFT</span><span id="oledLeftMode">READY</span></div>
+                  <div class="oled__main" id="oledLeftMain">NAVIGATION</div>
+                  <div class="oled__bottom"><span id="oledLeftDistance">140 CM</span><span id="oledLeftMotor">M8 IDLE</span></div>
+                </div>
+              </div>
+              <div class="display-unit">
+                <div class="display-unit__label"><span>OLED-R · 0.96 in</span><span>128×64</span></div>
+                <div class="oled" id="oledRight" role="img" aria-label="Right 0.96 inch OLED display">
+                  <div class="oled__top"><span>ARAS / RIGHT</span><span id="oledRightMode">READY</span></div>
+                  <div class="oled__main" id="oledRightMain">NAVIGATION</div>
+                  <div class="oled__bottom"><span id="oledRightDistance">140 CM</span><span id="oledRightMotor">M3 IDLE</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="display-unit">
+              <div class="display-unit__label"><span>Dashboard LCD</span><span>16×2</span></div>
+              <div class="lcd-module">
+                <div class="lcd-screen" role="img" aria-label="16 by 2 dashboard character LCD" aria-live="polite">
+                  <div class="lcd__line" id="lcdLine1">SPD:045 LN:+00  </div>
+                  <div class="lcd__line" id="lcdLine2">RISK:000 NOMINAL</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Helmet haptics</h2><span class="panel__hint" id="hapticMode">Idle</span></div>
+          <div class="panel__body helmet"><div class="helmet__shell" aria-label="Ten directional helmet motors" id="helmet"></div></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Hardware relays</h2><span class="panel__hint">Physical state</span></div>
+          <div class="panel__body relay-grid" id="relayGrid"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Risk timeline</h2><span class="panel__hint">Last 24 cycles</span></div>
+          <canvas class="telemetry-canvas" id="telemetryCanvas" role="img" aria-label="Recent risk score timeline"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel__head"><h2 class="panel__title">Event stream</h2><span class="panel__hint">MCU2 log</span></div>
+          <div class="panel__body event-feed" id="eventFeed" aria-live="polite"></div>
+        </section>
+      </aside>
+    </div>
+
+    <div class="footer-note">
+      <span>SIMULATION MODEL · FOR ENGINEERING DEMONSTRATION · Patent Pending IN/PA-1785</span>
+      <span>TWINKEY ARAS · Indian Provisional Patent No. 202521120497 · arasystem.in</span>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const defaults = { front: 250, rear: 180, left: 140, right: 140, lean: 0, speed: 45, pothole: 18, ambient: 15000, oncoming: false, manualBrake: false };
+      const state = { ...defaults };
+      let running = true;
+      let activeScenario = 'cruise';
+      let packetCount = 12480;
+      let lastRiskBand = 'low';
+      let riskHistory = Array(24).fill(8);
+      let testLog = [];
+      let logCounter = 1;
+      let aebActive = false;
+      let aebStart = 0;
+      let activeVehicle = 'motorcycle';
+      let activeTab = 'log';
+
+      // Vehicle configs — supports multi-vehicle claim (Section 9 of experimental data)
+      const vehicleProfiles = {
+        motorcycle: { label: 'Motorcycle', clearance: 18, aebThresh: 50,  note: 'Ground clearance: 18 cm · AEB threshold: 50 cm' },
+        scooter:    { label: 'Scooter',    clearance: 14, aebThresh: 45,  note: 'Ground clearance: 14 cm · AEB threshold: 45 cm' },
+        ev:         { label: 'EV Two-Wheeler', clearance: 16, aebThresh: 48, note: 'Ground clearance: 16 cm · AEB threshold: 48 cm · 12V compat.' },
+        car:        { label: 'Car',        clearance: 28, aebThresh: 60,  note: 'Ground clearance: 28 cm · AEB threshold: 60 cm · bumper mount' },
+      };
+
+      const sensors = [
+        { key: 'front',   label: 'Front distance',   min: 10,  max: 400, unit: 'cm' },
+        { key: 'rear',    label: 'Rear distance',     min: 10,  max: 400, unit: 'cm' },
+        { key: 'left',    label: 'Left blind spot',   min: 10,  max: 220, unit: 'cm' },
+        { key: 'right',   label: 'Right blind spot',  min: 10,  max: 220, unit: 'cm' },
+        { key: 'pothole', label: 'Road-depth delta',  min: 0,   max: 60,  unit: 'cm' },
+        { key: 'lean',    label: 'Motorcycle lean',   min: -45, max: 45,  unit: '°'  },
+        { key: 'speed',   label: 'Vehicle speed',     min: 0,   max: 130, unit: 'km/h' },
+        { key: 'ambient', label: 'Ambient light',     min: 0,   max: 26000, unit: 'lx' }
+      ];
+
+      const scenarios = [
+        { id: 'cruise',   icon: '◎', name: 'Clear road',        values: { ...defaults } },
+        { id: 'left',     icon: '←', name: 'Left blind spot',   values: { left: 42, speed: 58 } },
+        { id: 'right',    icon: '→', name: 'Right blind spot',  values: { right: 38, speed: 62 } },
+        { id: 'oncoming', icon: '◇', name: 'Oncoming vehicle',  values: { front: 95, ambient: 4200, oncoming: true, speed: 70 } },
+        { id: 'pothole',  icon: '⌄', name: 'Deep pothole',      values: { front: 165, pothole: 48, speed: 54 } },
+        { id: 'critical', icon: '!', name: 'Critical conflict',  values: { front: 34, rear: 48, left: 36, right: 44, pothole: 50, speed: 82, oncoming: true } }
+      ];
+
+      const $ = s => document.querySelector(s);
+      const clamp = (v, mn, mx) => Math.min(mx, Math.max(mn, v));
+
+      // ── BUILD UI ──────────────────────────────────────────────
+      function buildUI() {
+        $('#scenarioGrid').innerHTML = scenarios.map(s =>
+          `<button class="scenario" type="button" data-scenario="${s.id}" aria-pressed="${s.id === activeScenario}">
+            <span class="scenario__icon" aria-hidden="true">${s.icon}</span>
+            <span class="scenario__name">${s.name}</span>
+          </button>`).join('');
+
+        $('#sensorList').innerHTML = sensors.map(s =>
+          `<div class="sensor">
+            <div class="sensor__top">
+              <label for="sensor-${s.key}">${s.label}</label>
+              <output id="output-${s.key}" for="sensor-${s.key}">${state[s.key]} ${s.unit}</output>
+            </div>
+            <input id="sensor-${s.key}" data-sensor="${s.key}" type="range" min="${s.min}" max="${s.max}" value="${state[s.key]}" aria-label="${s.label}">
+          </div>`).join('');
+
+        $('#helmet').innerHTML = Array.from({ length: 10 }, (_, i) =>
+          `<span class="motor" data-motor="${i}" style="--angle:${i * 36}deg">${i + 1}</span>`).join('');
+
+        $('#relayGrid').innerHTML = ['Brake', 'L. indicator', 'R. indicator', 'Low beam'].map((name, i) =>
+          `<div class="relay" data-relay="${i}"><div class="relay__dot"></div><div class="relay__name">${name}</div></div>`).join('');
+
+        // Events
+        document.querySelectorAll('[data-scenario]').forEach(b => b.addEventListener('click', () => applyScenario(b.dataset.scenario)));
+        document.querySelectorAll('[data-sensor]').forEach(input => input.addEventListener('input', () => {
+          state[input.dataset.sensor] = Number(input.value);
+          if (input.dataset.sensor !== 'ambient') state.oncoming = false;
+          activeScenario = 'custom';
+          syncControls(); update(true);
+        }));
+        $('#runToggle').addEventListener('click', toggleRunning);
+        $('#resetButton').addEventListener('click', () => applyScenario('cruise'));
+        $('#brakeButton').addEventListener('click', () => {
+          state.manualBrake = !state.manualBrake;
+          $('#brakeButton').textContent = state.manualBrake ? 'Release brake' : 'Emergency brake';
+          logEvent(state.manualBrake ? 'Manual emergency braking engaged' : 'Manual emergency braking released', state.manualBrake ? 'red' : 'green');
+          update(true);
+        });
+
+        // Vehicle selector
+        document.querySelectorAll('[data-vtype]').forEach(b => b.addEventListener('click', () => {
+          activeVehicle = b.dataset.vtype;
+          document.querySelectorAll('[data-vtype]').forEach(x => x.classList.toggle('is-active', x === b));
+          $('#vtypeNote').textContent = vehicleProfiles[activeVehicle].note;
+          logEvent(`Vehicle profile switched → ${vehicleProfiles[activeVehicle].label}`, 'cyan');
+          update(true);
+        }));
+
+        // Tabs
+        document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+          activeTab = b.dataset.tab;
+          document.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('is-active', x === b));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('is-active', c.id === `tab-${activeTab}`));
+          if (activeTab === 'flowchart') drawFlowchart(calculate());
+        }));
+
+        // CSV Export
+        $('#exportCsv').addEventListener('click', exportCsv);
+
+        window.addEventListener('resize', () => update(false), { passive: true });
+      }
+
+      // ── CALCULATE ─────────────────────────────────────────────
+      function calculate() {
+        const vp = vehicleProfiles[activeVehicle];
+        const aebDist = vp.aebThresh;
+        const leanSuppression = Math.abs(state.lean) > 32 ? .42 : 1;
+        const criticalDistance = 72 + state.speed * 1.72;
+        const frontThreat  = clamp((criticalDistance - state.front) / criticalDistance, 0, 1);
+        const rearThreat   = clamp((105 - state.rear) / 105, 0, 1);
+        const leftThreat   = clamp((100 - state.left) / 100, 0, 1) * leanSuppression;
+        const rightThreat  = clamp((100 - state.right) / 100, 0, 1) * leanSuppression;
+        const roadThreat   = clamp((state.pothole - 24) / 30, 0, 1) * clamp(state.speed / 35, .35, 1);
+        const risk = Math.round(clamp(frontThreat * 68 + rearThreat * 18 + Math.max(leftThreat, rightThreat) * 30 + roadThreat * 38 + (state.manualBrake ? 15 : 0), 0, 100));
+        const brake   = state.manualBrake || (state.front <= aebDist && frontThreat > .55 && Math.abs(state.lean) < 34);
+        const lowBeam = state.oncoming || state.ambient < 6500;
+        const band    = risk >= 70 ? 'critical' : risk >= 38 ? 'elevated' : 'low';
+
+        // Confidence scores (weighted sensor fusion — maps to Claim 1)
+        const confUS      = clamp(1 - (state.pothole > 5 ? 0.08 : 0) - (state.speed > 80 ? 0.06 : 0), 0.72, 1);
+        const confIR      = state.pothole > 20 ? clamp(0.88 + Math.random() * 0.06, 0, 1) : 0.95;
+        const confHum     = clamp(0.82 + (state.pothole > 30 ? 0.10 : 0), 0, 1);
+        const confOverall = clamp((confUS * 0.45 + confIR * 0.35 + confHum * 0.20), 0, 1);
+
+        // Road classification
+        let roadClass = 'Road OK';
+        if (state.pothole >= 40) roadClass = state.ambient < 5000 ? 'WET POTHOLE' : 'DRY POTHOLE';
+        else if (state.pothole >= 25) roadClass = 'HUMP / DIP';
+        else if (brake) roadClass = 'OBSTACLE';
+
+        return { criticalDistance, frontThreat, rearThreat, leftThreat, rightThreat, roadThreat, risk, brake, lowBeam, band, confUS, confIR, confHum, confOverall, roadClass, aebDist };
+      }
+
+      // ── UPDATE ────────────────────────────────────────────────
+      function update(pushHistory) {
+        const r = calculate();
+        updateStatus(r);
+        updateDecisions(r);
+        updateDisplays(r);
+        updateHaptics(r);
+        updateRelays(r);
+        updateConfidence(r);
+        updateAebTimer(r);
+        drawField(r);
+        if (activeTab === 'flowchart') drawFlowchart(r);
+        if (pushHistory) {
+          riskHistory.push(r.risk);
+          riskHistory = riskHistory.slice(-24);
+          drawTelemetry();
+          pushTestLog(r);
+        }
+        if (r.band !== lastRiskBand) {
+          logEvent(r.band === 'critical' ? 'Critical risk threshold crossed' : r.band === 'elevated' ? 'Adaptive warning envelope entered' : 'Safety envelope clear',
+            r.band === 'critical' ? 'red' : r.band === 'elevated' ? 'amber' : 'green');
+          lastRiskBand = r.band;
+        }
+      }
+
+      // ── CONFIDENCE ────────────────────────────────────────────
+      function updateConfidence(r) {
+        const set = (fillId, valId, val) => {
+          const pct = Math.round(val * 100);
+          $(fillId).style.width = pct + '%';
+          const el = $(valId);
+          el.textContent = pct + '%';
+          el.className = 'confidence-value' + (pct >= 88 ? ' is-high' : pct >= 75 ? ' is-med' : ' is-low');
+        };
+        set('#confUS',      '#confUSVal',      r.confUS);
+        set('#confIR',      '#confIRVal',      r.confIR);
+        set('#confHum',     '#confHumVal',     r.confHum);
+        set('#confOverall', '#confOverallVal', r.confOverall);
+      }
+
+      // ── AEB TIMER ─────────────────────────────────────────────
+      function updateAebTimer(r) {
+        const timer = $('#aebTimer');
+        if (r.brake && !state.manualBrake) {
+          if (!aebActive) { aebActive = true; aebStart = Date.now(); }
+          const elapsed = ((Date.now() - aebStart) / 1000).toFixed(1);
+          $('#aebCountdown').textContent = elapsed + 's';
+          timer.classList.add('is-active');
+        } else {
+          aebActive = false;
+          timer.classList.remove('is-active');
+        }
+      }
+
+      // ── TEST LOG ──────────────────────────────────────────────
+      function pushTestLog(r) {
+        const vp = vehicleProfiles[activeVehicle];
+        const irText = state.pothole > 20 ? 'LOW' : 'HIGH';
+        const humPct = state.pothole > 35 ? Math.round(65 + Math.random() * 15) : Math.round(38 + Math.random() * 8);
+        const badge = r.brake ? 'aeb' : r.band === 'critical' ? 'warn' : r.roadClass !== 'Road OK' ? 'road' : 'pass';
+        const badgeLabel = r.brake ? 'AEB ARMED' : r.band === 'critical' ? 'WARNING' : r.roadClass !== 'Road OK' ? r.roadClass : 'PASS';
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const conf = Math.round(r.confOverall * 100);
+
+        testLog.unshift({
+          n: logCounter++, time, vehicle: vp.label,
+          us: state.front + ' cm', ir: irText, hum: humPct + '%',
+          road: state.pothole + ' cm', cls: r.roadClass,
+          aeb: r.brake ? 'YES' : 'NO', conf: conf + '%',
+          badge, badgeLabel
+        });
+        if (testLog.length > 12) testLog.pop();
+        renderTestLog();
+      }
+
+      function renderTestLog() {
+        $('#testLogBody').innerHTML = testLog.map(row => `
+          <tr>
+            <td style="color:var(--muted)">${row.n}</td>
+            <td style="color:var(--muted)">${row.time}</td>
+            <td>${row.vehicle}</td>
+            <td style="color:var(--cyan)">${row.us}</td>
+            <td style="color:${row.ir === 'LOW' ? 'var(--amber)' : 'var(--green)'}">${row.ir}</td>
+            <td>${row.hum}</td>
+            <td style="color:var(--purple)">${row.road}</td>
+            <td style="color:var(--soft)">${row.cls}</td>
+            <td style="color:${row.aeb === 'YES' ? 'var(--red)' : 'var(--muted)'}">${row.aeb}</td>
+            <td style="color:${parseInt(row.conf) >= 88 ? 'var(--green)' : parseInt(row.conf) >= 75 ? 'var(--amber)' : 'var(--red)'}">${row.conf}</td>
+            <td><span class="log-badge log-badge--${row.badge}">${row.badgeLabel}</span></td>
+          </tr>`).join('');
+      }
+
+      // ── CSV EXPORT ────────────────────────────────────────────
+      function exportCsv() {
+        const headers = ['#','Timestamp','Vehicle','Ultrasonic','IR','Humidity','Road Delta','Classification','AEB','Confidence','Result'];
+        const rows = testLog.map(r => [r.n,r.time,r.vehicle,r.us,r.ir,r.hum,r.road,r.cls,r.aeb,r.conf,r.badgeLabel]);
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url;
+        a.download = `ARAS_TestLog_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click(); URL.revokeObjectURL(url);
+        logEvent('Test log exported as CSV', 'green');
+      }
+
+      // ── FLOWCHART ─────────────────────────────────────────────
+      function drawFlowchart(r) {
+        const canvas = $('#flowCanvas');
+        if (!canvas) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.round(rect.width * dpr);
+        canvas.height = Math.round(rect.height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const W = rect.width, H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const cyan   = '#3dd8f5';
+        const green  = '#49e6a0';
+        const amber  = '#ffbd66';
+        const red    = '#ff637d';
+        const purple = '#aa8bff';
+        const muted  = '#678493';
+        const soft   = '#a5bdc9';
+
+        function box(x, y, w, h, color, fill, text, active) {
+          ctx.save();
+          ctx.strokeStyle = active ? color : muted;
+          ctx.lineWidth = active ? 2 : 1;
+          ctx.fillStyle = active ? fill : 'rgba(255,255,255,.03)';
+          ctx.shadowColor = active ? color : 'transparent';
+          ctx.shadowBlur = active ? 12 : 0;
+          ctx.beginPath(); ctx.roundRect(x - w/2, y - h/2, w, h, 8); ctx.fill(); ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = active ? '#fff' : soft;
+          ctx.font = `700 ${w > 100 ? 10 : 9}px "JetBrains Mono"`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(text, x, y);
+          ctx.restore();
+        }
+
+        function diamond(x, y, size, color, text, active) {
+          ctx.save();
+          ctx.strokeStyle = active ? color : muted;
+          ctx.lineWidth = active ? 2 : 1;
+          ctx.fillStyle = active ? color.replace(')', ',.12)').replace('rgb','rgba') : 'rgba(255,255,255,.02)';
+          ctx.shadowColor = active ? color : 'transparent'; ctx.shadowBlur = active ? 10 : 0;
+          ctx.beginPath(); ctx.moveTo(x, y - size); ctx.lineTo(x + size * 1.5, y); ctx.lineTo(x, y + size); ctx.lineTo(x - size * 1.5, y); ctx.closePath();
+          ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+          ctx.fillStyle = active ? '#fff' : soft;
+          ctx.font = `700 9px "JetBrains Mono"`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(text, x, y);
+          ctx.restore();
+        }
+
+        function arrow(x1, y1, x2, y2, label, color, active) {
+          ctx.save();
+          ctx.strokeStyle = active ? color : 'rgba(103,132,147,.3)';
+          ctx.lineWidth = active ? 2 : 1;
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+          if (label) {
+            ctx.fillStyle = active ? color : muted;
+            ctx.font = '700 8px "JetBrains Mono"';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, (x1+x2)/2 + 10, (y1+y2)/2 - 6);
+          }
+          ctx.restore();
+        }
+
+        // Layout
+        const col = [W*0.12, W*0.3, W*0.5, W*0.7, W*0.88];
+        const row = [40, 95, 155, 210, 265, 330, 390];
+
+        // START
+        box(W/2, row[0], 110, 28, cyan, 'rgba(61,216,245,.15)', 'READ ALL SENSORS', true);
+
+        // Sensor diamonds
+        arrow(W/2, row[0]+14, col[1], row[1]-18, '', cyan, true);
+        diamond(col[1], row[1], 22, cyan,   'US < AEB?', r.brake || state.front < r.aebDist);
+        arrow(W/2, row[0]+14, col[2], row[1]-18, '', cyan, true);
+        diamond(col[2], row[1], 22, amber,  'POTHOLE?',  state.pothole >= 25);
+        arrow(W/2, row[0]+14, col[3], row[1]-18, '', cyan, true);
+        diamond(col[3], row[1], 22, purple, 'LDR<600?',  state.ambient < 6500);
+
+        // Pothole branch
+        arrow(col[2], row[1]+22, col[2], row[2]-18, 'YES', amber, state.pothole >= 25);
+        diamond(col[2], row[2], 22, amber, 'HUMID>60?', state.pothole >= 35);
+
+        arrow(col[2]-33, row[2], col[1], row[3]-16, 'NO', soft, state.pothole >= 25 && state.pothole < 35);
+        box(col[1], row[3], 90, 26, amber, 'rgba(255,189,102,.15)', 'DRY POTHOLE', state.pothole >= 25 && state.pothole < 35);
+
+        arrow(col[2]+33, row[2], col[3], row[3]-16, 'YES', red, state.pothole >= 35);
+        box(col[3], row[3], 90, 26, red, 'rgba(255,99,125,.15)', 'WET POTHOLE', state.pothole >= 35);
+
+        // AEB branch
+        arrow(col[1], row[1]+22, col[1], row[2]-16, 'YES', red, r.brake);
+        box(col[1], row[2], 90, 26, red, 'rgba(255,99,125,.2)', 'AEB RELAY ON', r.brake);
+
+        // Headlight branch
+        arrow(col[3], row[1]+22, col[3], row[2]-16, 'YES', purple, state.ambient < 6500);
+        box(col[3], row[2], 90, 26, purple, 'rgba(170,139,255,.15)', 'HEADLIGHT ON', state.ambient < 6500);
+        arrow(col[3], row[1]-22, col[4], row[2]-16, 'NO', muted, state.ambient >= 6500);
+        box(col[4], row[2], 85, 26, muted, 'rgba(103,132,147,.08)', 'STANDBY', state.ambient >= 6500);
+
+        // LOG → UART
+        box(W/2, row[4], 130, 26, green, 'rgba(73,230,160,.12)', 'LOG → ESP8266-2', true);
+        arrow(W/2, row[3]+14, W/2, row[4]-13, '', green, true);
+
+        // OUTPUT
+        box(W/2, row[5], 130, 26, cyan, 'rgba(61,216,245,.15)', `OLED: ${r.roadClass}`, true);
+        arrow(W/2, row[4]+13, W/2, row[5]-13, '', cyan, true);
+
+        // Confidence badge
+        const conf = Math.round(r.confOverall * 100);
+        ctx.save();
+        ctx.fillStyle = conf >= 88 ? 'rgba(73,230,160,.18)' : 'rgba(255,189,102,.18)';
+        ctx.strokeStyle = conf >= 88 ? green : amber;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.roundRect(W - 130, 8, 120, 26, 6); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = conf >= 88 ? green : amber;
+        ctx.font = '700 9px "JetBrains Mono"';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(`CONFIDENCE: ${conf}%`, W - 70, 21);
+        ctx.restore();
+      }
+
+      // ── EXISTING FUNCTIONS (preserved exactly) ─────────────────
+      function applyScenario(id) {
+        const scenario = scenarios.find(item => item.id === id);
+        if (!scenario) return;
+        Object.assign(state, defaults, scenario.values, { manualBrake: false });
+        activeScenario = id;
+        $('#brakeButton').textContent = 'Emergency brake';
+        syncControls();
+        logEvent(`Scenario loaded: ${scenario.name}`, id === 'critical' ? 'red' : 'cyan');
+        update(true);
+      }
+
+      function syncControls() {
+        document.querySelectorAll('[data-scenario]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scenario === activeScenario)));
+        sensors.forEach(s => {
+          const input = $(`#sensor-${s.key}`);
+          const output = $(`#output-${s.key}`);
+          input.value = state[s.key];
+          input.style.setProperty('--fill', `${((state[s.key] - s.min) / (s.max - s.min)) * 100}%`);
+          output.textContent = `${state[s.key]} ${s.unit}`;
+        });
+      }
+
+      function toggleRunning() {
+        running = !running;
+        const b = $('#runToggle');
+        b.classList.toggle('is-active', running);
+        b.setAttribute('aria-pressed', String(running));
+        b.querySelector('span:last-child').textContent = running ? 'Live' : 'Paused';
+        logEvent(running ? 'Simulation resumed' : 'Simulation paused', running ? 'green' : 'amber');
+      }
+
+      function updateStatus(r) {
+        const color = r.band === 'critical' ? 'var(--red)' : r.band === 'elevated' ? 'var(--amber)' : 'var(--green)';
+        $('#riskOrb').style.setProperty('--risk', r.risk);
+        $('#riskOrb').style.setProperty('--risk-color', color);
+        $('#riskValue').textContent = String(r.risk).padStart(2, '0');
+        $('#riskLabel').textContent = r.band === 'critical' ? 'High risk' : r.band === 'elevated' ? 'Elevated' : 'Low risk';
+        $('#systemState').textContent = r.band === 'critical' ? 'Intervening' : r.band === 'elevated' ? 'Guarded' : 'Nominal';
+        $('#systemState').style.color = color;
+        $('#systemSub').textContent = r.brake ? 'Brake relay asserted' : r.band === 'elevated' ? 'Warning channels active' : 'Safety loop is deterministic';
+        $('#speedReadout').textContent = state.speed;
+      }
+
+      function updateDecisions(r) {
+        setDecision('#brakeDecision', '#brakeDecisionText', r.brake, r.brake ? `ENGAGED · ${Math.round(r.criticalDistance)} cm envelope` : `Standby · ${Math.round(r.criticalDistance)} cm envelope`);
+        setDecision('#beamDecision', '#beamDecisionText', r.lowBeam, r.lowBeam ? 'Low beam · glare suppression' : 'High beam available');
+        const hapticActive = Math.max(r.leftThreat, r.rightThreat, r.roadThreat) > .18;
+        const direction = r.roadThreat > Math.max(r.leftThreat, r.rightThreat) ? 'Road impact ahead' : r.leftThreat > r.rightThreat ? 'Left-side warning' : 'Right-side warning';
+        setDecision('#hapticDecision', '#hapticDecisionText', hapticActive, hapticActive ? direction : 'All motors idle');
+      }
+
+      function updateDisplays(r) {
+        updateOled('Left', state.left, r.leftThreat, 'M8');
+        updateOled('Right', state.right, r.rightThreat, 'M3');
+        const speed = String(Math.round(state.speed)).padStart(3, '0');
+        const leanSign = state.lean >= 0 ? '+' : '-';
+        const lean = String(Math.abs(Math.round(state.lean))).padStart(2, '0');
+        const stateText = r.brake ? 'BRAKE' : r.band === 'critical' ? 'DANGER' : r.band === 'elevated' ? 'WARN' : 'NOMINAL';
+        $('#lcdLine1').textContent = fitLcd(`SPD:${speed} LN:${leanSign}${lean}`);
+        $('#lcdLine2').textContent = fitLcd(`RISK:${String(r.risk).padStart(3, '0')} ${stateText}`);
+      }
+
+      function updateOled(side, distance, threat, motor) {
+        const alert = threat > .18;
+        const display = $(`#oled${side}`);
+        display.classList.toggle('is-alert', alert);
+        $(`#oled${side}Mode`).textContent = alert ? 'ALERT' : 'READY';
+        $(`#oled${side}Main`).textContent = alert ? `${side.toUpperCase()} BLIND SPOT` : 'NAVIGATION';
+        $(`#oled${side}Distance`).textContent = `${Math.round(distance)} CM`;
+        $(`#oled${side}Motor`).textContent = alert ? `${motor} ${Math.round(threat * 100)}%` : `${motor} IDLE`;
+      }
+
+      function fitLcd(text) { return text.slice(0, 16).padEnd(16, ' '); }
+
+      function setDecision(card, text, alert, value) {
+        $(card).classList.toggle('is-alert', alert);
+        $(text).textContent = value;
+      }
+
+      function updateHaptics(r) {
+        const powers = Array(10).fill(0);
+        if (r.leftThreat  > .12) [6,7,8].forEach(i => powers[i] = r.leftThreat);
+        if (r.rightThreat > .12) [1,2,3].forEach(i => powers[i] = r.rightThreat);
+        if (r.frontThreat > .52) [0,1,9].forEach(i => powers[i] = Math.max(powers[i], r.frontThreat));
+        if (r.roadThreat  > .1)  [0,4,5,9].forEach(i => powers[i] = Math.max(powers[i], r.roadThreat));
+        document.querySelectorAll('.motor').forEach((m, i) => {
+          m.style.setProperty('--power', powers[i].toFixed(2));
+          m.classList.toggle('is-on', powers[i] > .12);
+        });
+        const max = Math.max(...powers);
+        $('#hapticMode').textContent = max > .72 ? 'Strong pulse' : max > .12 ? 'Directional pulse' : 'Idle';
+      }
+
+      function updateRelays(r) {
+        const states = [r.brake, r.leftThreat > .35, r.rightThreat > .35, r.lowBeam];
+        document.querySelectorAll('.relay').forEach((relay, i) => {
+          relay.classList.toggle('is-on', states[i]);
+          relay.classList.toggle('is-danger', i === 0 && states[i]);
+        });
+      }
+
+      function fitCanvas(canvas) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+          canvas.width = Math.round(rect.width * dpr);
+          canvas.height = Math.round(rect.height * dpr);
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, w: rect.width, h: rect.height };
+      }
+
+      function drawField(r) {
+        const { ctx, w, h } = fitCanvas($('#fieldCanvas'));
+        ctx.clearRect(0, 0, w, h);
+        const cx = w / 2, cy = h * .52;
+        const scale = Math.min(w / 700, h / 720);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(120,165,185,.11)'; ctx.lineWidth = 1;
+        [90, 155, 225].forEach(radius => { ctx.beginPath(); ctx.arc(cx, cy, radius * scale, 0, Math.PI * 2); ctx.stroke(); });
+        ctx.setLineDash([5, 8]);
+        ctx.beginPath(); ctx.moveTo(cx, 125); ctx.lineTo(cx, h - 90); ctx.stroke();
+        ctx.setLineDash([]);
+        drawSector(ctx, cx, cy, -Math.PI / 2, r.criticalDistance, state.front, scale, '#3dd8f5', r.frontThreat);
+        drawSector(ctx, cx, cy,  Math.PI / 2, 105, state.rear, scale, '#aa8bff', r.rearThreat);
+        drawSide(ctx, cx, cy, -1, state.left, scale, r.leftThreat);
+        drawSide(ctx, cx, cy,  1, state.right, scale, r.rightThreat);
+        drawBike(ctx, cx, cy, scale);
+        if (r.roadThreat > .05) {
+          const y = cy - 175 * scale;
+          ctx.fillStyle = `rgba(255,99,125,${.18 + r.roadThreat * .36})`;
+          ctx.beginPath(); ctx.ellipse(cx + 45 * scale, y, 42 * scale, 18 * scale, -.2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = '#ff637d'; ctx.stroke();
+          label(ctx, 'POTHOLE', cx + 45 * scale, y - 27 * scale, '#ff8ea1');
+        }
+        ctx.restore();
+      }
+
+      function drawSector(ctx, cx, cy, angle, envelope, distance, scale, color, threat) {
+        const maxRadius = 240 * scale;
+        const radius = clamp(distance / Math.max(envelope, 1), .12, 1) * maxRadius;
+        ctx.fillStyle = color.replace(')', `,${.04 + threat * .12})`).replace('rgb', 'rgba');
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = .48 + threat * .5;
+        ctx.beginPath(); ctx.arc(cx, cy, maxRadius, angle - .38, angle + .38); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        obstacle(ctx, x, y, distance, color, threat);
+        ctx.globalAlpha = 1;
+      }
+
+      function drawSide(ctx, cx, cy, dir, distance, scale, threat) {
+        const x = cx + dir * clamp(distance / 100, .25, 1.25) * 150 * scale;
+        obstacle(ctx, x, cy + 5 * scale, distance, threat > .35 ? '#ffbd66' : '#3dd8f5', threat);
+      }
+
+      function obstacle(ctx, x, y, distance, color, threat) {
+        const size = 7 + threat * 7;
+        ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 8 + threat * 20;
+        ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        label(ctx, `${Math.round(distance)} CM`, x, y - 16, color);
+      }
+
+      function label(ctx, text, x, y, color) {
+        ctx.fillStyle = color; ctx.font = '600 9px "JetBrains Mono"'; ctx.textAlign = 'center'; ctx.fillText(text, x, y);
+      }
+
+      function drawBike(ctx, x, y, s) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+        const g = ctx.createLinearGradient(-25, -70, 25, 70); g.addColorStop(0, '#6fe8fa'); g.addColorStop(1, '#596f81');
+        ctx.shadowColor = 'rgba(61,216,245,.45)'; ctx.shadowBlur = 20;
+        ctx.fillStyle = '#071019'; ctx.strokeStyle = g; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.roundRect(-25, -68, 50, 136, 24); ctx.fill(); ctx.stroke();
+        ctx.shadowBlur = 0; ctx.fillStyle = '#152b3b'; ctx.fillRect(-17, -18, 34, 52);
+        ctx.fillStyle = '#3dd8f5'; ctx.fillRect(-4, -78, 8, 18); ctx.fillRect(-4, 60, 8, 18);
+        ctx.strokeStyle = '#a5bdc9'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-38, -43); ctx.lineTo(38, -43); ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawTelemetry() {
+        const { ctx, w, h } = fitCanvas($('#telemetryCanvas'));
+        ctx.clearRect(0, 0, w, h);
+        const pad = 12;
+        ctx.strokeStyle = 'rgba(120,165,185,.12)'; ctx.lineWidth = 1;
+        [25,50,75].forEach(v => { const y = h - pad - (v/100)*(h-pad*2); ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke(); });
+        const g = ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,'rgba(61,216,245,.35)'); g.addColorStop(1,'rgba(61,216,245,0)');
+        ctx.beginPath();
+        riskHistory.forEach((v, i) => { const x = pad + i/(riskHistory.length-1)*(w-pad*2); const y = h-pad-v/100*(h-pad*2); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
+        ctx.strokeStyle = '#3dd8f5'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.lineTo(w-pad,h-pad); ctx.lineTo(pad,h-pad); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+      }
+
+      function logEvent(text, tone = 'cyan') {
+        const colors = { cyan: 'var(--cyan)', green: 'var(--green)', amber: 'var(--amber)', red: 'var(--red)' };
+        const event = document.createElement('div');
+        event.className = 'event';
+        event.style.setProperty('--event', colors[tone] || colors.cyan);
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        event.innerHTML = `<span class="event__dot"></span><span class="event__text">${text}</span><span class="event__time">${time}</span>`;
+        $('#eventFeed').prepend(event);
+        while ($('#eventFeed').children.length > 7) $('#eventFeed').lastElementChild.remove();
+      }
+
+      function heartbeat() {
+        if (running) {
+          packetCount += 2;
+          $('#packetCount').textContent = packetCount.toLocaleString('en-IN');
+          $('#loopLatency').textContent = String(18 + Math.floor(Math.random() * 9));
+          $('#uplink').textContent = (99.6 + Math.random() * .3).toFixed(1);
+          const risk = calculate().risk;
+          riskHistory.push(clamp(risk + Math.round((Math.random() - .5) * 4), 0, 100));
+          riskHistory = riskHistory.slice(-24);
+          drawTelemetry();
+          pushTestLog(calculate());
+        }
+      }
+
+      buildUI();
+      syncControls();
+      logEvent('Dual-MCU handshake verified', 'green');
+      logEvent('Safety engine online · 27 vectors/cycle', 'cyan');
+      update(true);
+      setInterval(heartbeat, 900);
+    })();
+  </script>
+  <script src="site.js"></script>
+</body>
+</html>
